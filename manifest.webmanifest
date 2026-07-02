@@ -1,0 +1,18 @@
+{
+  "name": "Correção de Insulina",
+  "short_name": "Insulina",
+  "description": "Calculadora de insulina de correção e bolus alimentar",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F3F7F6",
+  "theme_color": "#0D5A52",
+  "icons": [
+    {
+      "src": "icone.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

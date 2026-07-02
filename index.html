@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0D5A52">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<title>Correção de Insulina</title>
+<style>
+  :root {
+    --bg: #F3F7F6;
+    --card: #FFFFFF;
+    --ink: #182E2C;
+    --ink-soft: #5A6E6C;
+    --line: #DCE6E4;
+    --teal: #14776C;
+    --teal-deep: #0D5A52;
+    --red: #C0392B;
+    --red-soft: #FBEAE7;
+    --green: #2E7D4F;
+    --green-soft: #E9F4EC;
+    --amber: #C07A1E;
+    --amber-soft: #FBF2E3;
+    --radius: 14px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px 48px;
+  }
+
+  .app { width: 100%; max-width: 520px; }
+
+  header { padding: 8px 4px 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  header h1 { font-size: 1.35rem; font-weight: 650; letter-spacing: -0.01em; }
+  header p { margin-top: 4px; font-size: 0.85rem; color: var(--ink-soft); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+
+  label, .rotulo-campo {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
+  input[type="text"], input[type="time"] {
+    width: 100%;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--teal); }
+  input::placeholder { color: #B9C6C4; font-weight: 500; }
+
+  small.ajuda { display: block; margin-top: 5px; font-size: 0.72rem; color: var(--ink-soft); }
+
+  /* Unidade mg/dL | mmol/L */
+  .toggle-unidade { display: flex; border: 1.5px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .toggle-unidade button {
+    font-family: inherit; font-size: 0.75rem; font-weight: 600;
+    padding: 6px 10px; border: none; background: var(--card);
+    color: var(--ink-soft); cursor: pointer;
+  }
+  .toggle-unidade button.ativo { background: var(--teal-deep); color: #fff; }
+
+  /* Campo principal de glicose */
+  .glicose-wrap { position: relative; }
+  #glicose {
+    font-size: 2.6rem;
+    font-weight: 650;
+    border-width: 2px;
+    border-radius: 10px;
+    padding: 10px 96px 10px 16px;
+  }
+  .unidade {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); pointer-events: none;
+  }
+
+  /* Régua de glicemia */
+  .regua { margin-top: 18px; }
+  .regua-track { position: relative; height: 12px; border-radius: 6px; overflow: hidden; display: flex; }
+  .zona-hipo  { width: 10%; background: var(--red); }
+  .zona-alvo  { width: 30%; background: var(--green); }
+  .zona-alta  { width: 25%; background: var(--amber); }
+  .zona-muito { width: 35%; background: var(--red); opacity: 0.75; }
+  .marcador {
+    position: absolute; top: -6px; width: 4px; height: 24px;
+    background: var(--ink); border-radius: 2px;
+    box-shadow: 0 0 0 2px var(--card);
+    transition: left 0.25s ease; display: none;
+  }
+  .regua-outer { position: relative; padding: 6px 0 4px; }
+  .regua-legenda {
+    display: flex; justify-content: space-between; margin-top: 6px;
+    font-size: 0.7rem; color: var(--ink-soft); font-variant-numeric: tabular-nums;
+  }
+
+  .linha-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .linha-campos-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 16px; }
+
+  .separador { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+
+  .info-iob {
+    margin-top: 10px; font-size: 0.82rem; font-weight: 600;
+    color: var(--teal-deep); font-variant-numeric: tabular-nums;
+  }
+
+  .botao-mini {
+    font-family: inherit; font-size: 0.75rem; font-weight: 600;
+    padding: 6px 12px; border: 1.5px solid var(--line); border-radius: 8px;
+    background: var(--card); color: var(--ink-soft); cursor: pointer;
+  }
+  .botao-mini:hover { border-color: var(--teal); color: var(--teal-deep); }
+
+  /* Resultado */
+  .resultado { border-radius: var(--radius); padding: 22px 20px; display: none; margin-bottom: 14px; }
+  .resultado.visivel { display: block; }
+  .resultado.dose { background: var(--teal-deep); color: #FFFFFF; }
+  .resultado.ok   { background: var(--green-soft); color: var(--green); border: 1px solid #CBE5D3; }
+  .resultado.hipo { background: var(--red-soft); color: var(--red); border: 1px solid #F0CFC9; }
+
+  .resultado .rotulo {
+    font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; opacity: 0.85;
+  }
+  .resultado .valor {
+    font-size: 3.4rem; font-weight: 700; font-variant-numeric: tabular-nums;
+    line-height: 1.15; margin-top: 2px;
+  }
+  .resultado .valor small { font-size: 1.1rem; font-weight: 600; }
+  .resultado .mensagem { font-size: 1rem; font-weight: 600; line-height: 1.45; }
+
+  .detalhe-doses { margin-top: 14px; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+  .detalhe-doses div { display: flex; justify-content: space-between; padding: 3px 0; opacity: 0.92; }
+  .detalhe-doses .total { border-top: 1px solid rgba(255,255,255,0.35); margin-top: 4px; padding-top: 7px; font-weight: 700; }
+
+  .aviso {
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+    font-size: 0.85rem; font-weight: 600; line-height: 1.5; display: none;
+  }
+  .aviso.visivel { display: block; }
+  .aviso.cetonas { background: var(--amber-soft); color: var(--amber); border: 1px solid #EEDCB8; }
+  .aviso.maximo  { background: var(--red-soft); color: var(--red); border: 1px solid #F0CFC9; }
+
+  .botao-principal {
+    width: 100%; font-family: inherit; font-size: 0.95rem; font-weight: 650;
+    padding: 12px; border: none; border-radius: 10px;
+    background: var(--teal); color: #fff; cursor: pointer; display: none;
+    margin-bottom: 14px;
+  }
+  .botao-principal:hover { background: var(--teal-deep); }
+  .botao-principal.visivel { display: block; }
+  .botao-principal.salvo { background: var(--green); }
+
+  /* Seções recolhíveis */
+  details.card { padding: 0; overflow: hidden; }
+  details.card summary {
+    list-style: none; cursor: pointer; padding: 16px 20px;
+    font-size: 0.95rem; font-weight: 650; display: flex; justify-content: space-between; align-items: center;
+  }
+  details.card summary::after { content: "+"; font-size: 1.2rem; color: var(--ink-soft); font-weight: 400; }
+  details.card[open] summary::after { content: "−"; }
+  details.card .conteudo { padding: 4px 20px 20px; }
+
+  /* Regra 1800/500 */
+  .regra-box { background: var(--bg); border-radius: 10px; padding: 14px; margin-top: 16px; }
+  .regra-box p { font-size: 0.78rem; color: var(--ink-soft); line-height: 1.5; margin-bottom: 10px; }
+  .regra-linha { display: flex; gap: 10px; align-items: flex-end; }
+  .regra-linha > div { flex: 1; }
+  #sugestaoRegra { margin-top: 10px; font-size: 0.82rem; font-weight: 600; color: var(--teal-deep); display: none; }
+
+  /* Histórico */
+  .grafico-wrap { margin-bottom: 14px; }
+  .grafico-wrap svg { width: 100%; height: 90px; display: block; }
+
+  table.historico { width: 100%; border-collapse: collapse; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+  table.historico th {
+    text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-soft); padding: 6px 4px; border-bottom: 1px solid var(--line);
+  }
+  table.historico td { padding: 7px 4px; border-bottom: 1px solid var(--line); }
+  table.historico td.acao { text-align: right; }
+  .excluir {
+    background: none; border: none; color: var(--red); cursor: pointer;
+    font-size: 0.9rem; padding: 2px 6px;
+  }
+  .historico-vazio { font-size: 0.85rem; color: var(--ink-soft); padding: 8px 0; }
+  .historico-acoes { display: flex; gap: 10px; margin-top: 14px; }
+
+  footer { margin-top: 8px; padding: 0 6px; font-size: 0.75rem; line-height: 1.55; color: var(--ink-soft); }
+
+  @media (max-width: 460px) {
+    #glicose { font-size: 2.1rem; }
+    .resultado .valor { font-size: 2.8rem; }
+    .linha-campos-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Correção de Insulina</h1>
+      <p>Digite sua glicose e veja a dose na hora.</p>
+    </div>
+    <div class="toggle-unidade" role="group" aria-label="Unidade de glicose">
+      <button id="btnMg" class="ativo" type="button">mg/dL</button>
+      <button id="btnMmol" type="button">mmol/L</button>
+    </div>
+  </header>
+
+  <!-- MEDIÇÃO -->
+  <div class="card">
+    <label for="glicose">Glicose atual</label>
+    <div class="glicose-wrap">
+      <input id="glicose" type="text" inputmode="decimal" placeholder="ex.: 350" autofocus autocomplete="off">
+      <span class="unidade" id="unidadeGlicose">mg/dL</span>
+    </div>
+
+    <div class="regua">
+      <div class="regua-outer">
+        <div class="regua-track">
+          <div class="zona-hipo"></div>
+          <div class="zona-alvo"></div>
+          <div class="zona-alta"></div>
+          <div class="zona-muito"></div>
+        </div>
+        <div class="marcador" id="marcador"></div>
+      </div>
+      <div class="regua-legenda" id="reguaLegenda">
+        <span>40</span><span>70</span><span>180</span><span>250</span><span>400+</span>
+      </div>
+    </div>
+
+    <div class="linha-campos">
+      <div>
+        <label for="carbs">Carboidratos da refeição</label>
+        <input id="carbs" type="text" inputmode="decimal" placeholder="opcional">
+        <small class="ajuda">Em gramas. Deixe vazio se não for comer.</small>
+      </div>
+      <div>
+        <label for="unidadesUltima">Última dose aplicada</label>
+        <div style="display:flex; gap:8px">
+          <input id="unidadesUltima" type="text" inputmode="decimal" placeholder="U" style="width:64px">
+          <input id="horaUltima" type="time">
+        </div>
+        <small class="ajuda">Para descontar a insulina ainda ativa.</small>
+      </div>
+    </div>
+    <div class="info-iob" id="infoIob" style="display:none"></div>
+  </div>
+
+  <!-- AVISOS -->
+  <div class="aviso cetonas" id="avisoCetonas">
+    ⚠ Glicose muito alta. Verifique cetonas na urina, beba bastante água e
+    meça novamente em 2–3 horas. Se as cetonas estiverem positivas ou houver
+    enjoo/vômito, procure atendimento médico (risco de cetoacidose).
+  </div>
+  <div class="aviso maximo" id="avisoMaximo"></div>
+
+  <!-- RESULTADO -->
+  <div class="resultado" id="resultado"></div>
+  <button class="botao-principal" id="btnSalvar" type="button">Salvar no histórico</button>
+
+  <!-- PARÂMETROS -->
+  <details class="card">
+    <summary>Parâmetros do tratamento</summary>
+    <div class="conteudo">
+      <div class="linha-campos">
+        <div>
+          <label for="alvoDia">Alvo diurno <span id="badgeDia"></span></label>
+          <input id="alvoDia" type="text" inputmode="decimal">
+          <small class="ajuda">Usado das 6h às 22h.</small>
+        </div>
+        <div>
+          <label for="alvoNoite">Alvo noturno <span id="badgeNoite"></span></label>
+          <input id="alvoNoite" type="text" inputmode="decimal">
+          <small class="ajuda">Usado das 22h às 6h.</small>
+        </div>
+      </div>
+      <div class="linha-campos-3">
+        <div>
+          <label for="fsi">Sensibilidade (FSI)</label>
+          <input id="fsi" type="text" inputmode="decimal">
+          <small class="ajuda" id="ajudaFsi">mg/dL que 1 U reduz.</small>
+        </div>
+        <div>
+          <label for="icr">Razão carbo (ICR)</label>
+          <input id="icr" type="text" inputmode="decimal">
+          <small class="ajuda">Gramas que 1 U cobre.</small>
+        </div>
+        <div>
+          <label for="duracao">Duração da insulina</label>
+          <input id="duracao" type="text" inputmode="decimal">
+          <small class="ajuda">Horas de ação (3 a 5).</small>
+        </div>
+      </div>
+      <div class="linha-campos">
+        <div>
+          <label for="doseMax">Dose máxima por vez</label>
+          <input id="doseMax" type="text" inputmode="decimal">
+          <small class="ajuda">Teto de segurança, em unidades.</small>
+        </div>
+      </div>
+
+      <div class="regra-box">
+        <p><strong>Estimar FSI e ICR (regras 1800 e 500):</strong> informe sua dose
+        diária total de insulina (basal + rápida) para uma estimativa inicial.
+        Confirme os valores com seu médico antes de usar.</p>
+        <div class="regra-linha">
+          <div>
+            <label for="tdd">Dose diária total</label>
+            <input id="tdd" type="text" inputmode="decimal" placeholder="U/dia">
+          </div>
+          <button class="botao-mini" id="btnAplicarRegra" type="button" style="display:none">Usar estes valores</button>
+        </div>
+        <div id="sugestaoRegra"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- HISTÓRICO -->
+  <details class="card" id="secaoHistorico">
+    <summary>Histórico de medições</summary>
+    <div class="conteudo">
+      <div class="grafico-wrap" id="graficoWrap"></div>
+      <div id="listaHistorico"></div>
+      <div class="historico-acoes">
+        <button class="botao-mini" id="btnExportar" type="button">Exportar CSV</button>
+        <button class="botao-mini" id="btnLimparHistorico" type="button">Apagar tudo</button>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    ⚠ Esta calculadora é apenas uma ferramenta de apoio. Todos os parâmetros
+    (alvos, FSI, ICR, duração da insulina e dose máxima) devem ser definidos
+    pelo seu médico. Em caso de dúvida, não aplique insulina e procure
+    orientação médica.
+  </footer>
+</div>
+
+<script>
+  // ---------- Constantes e estado ----------
+  var FATOR_MMOL = 18; // 1 mmol/L = 18 mg/dL
+
+  var CFG_PADRAO = {
+    unidade: 'mg',   // 'mg' ou 'mmol'
+    alvoDia: 150,    // mg/dL
+    alvoNoite: 150,  // mg/dL
+    fsi: 50,         // mg/dL por unidade
+    icr: 15,         // gramas por unidade
+    duracao: 4,      // horas de ação da insulina
+    doseMax: 10      // unidades
+  };
+
+  var cfg = carregarCfg();
+  var historico = carregarHistorico();
+  var ultimoCalculo = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- Utilitários ----------
+  function fmt(n, dec) {
+    if (dec === undefined) dec = (n % 1 === 0) ? 0 : 1;
+    return n.toFixed(dec).replace('.', ',');
+  }
+  function parseNum(texto) {
+    var n = Number(String(texto).trim().replace(',', '.'));
+    return (isFinite(n) && n > 0) ? n : null;
+  }
+  function paraMg(valor) { return cfg.unidade === 'mmol' ? valor * FATOR_MMOL : valor; }
+  function deMg(valorMg) { return cfg.unidade === 'mmol' ? valorMg / FATOR_MMOL : valorMg; }
+  function fmtGlicose(valorMg) {
+    return cfg.unidade === 'mmol' ? fmt(valorMg / FATOR_MMOL, 1) : fmt(valorMg, 0);
+  }
+  function rotuloUnidade() { return cfg.unidade === 'mmol' ? 'mmol/L' : 'mg/dL'; }
+
+  function carregarCfg() {
+    try {
+      var c = JSON.parse(localStorage.getItem('cfgInsulina'));
+      if (c) {
+        for (var k in CFG_PADRAO) if (c[k] === undefined) c[k] = CFG_PADRAO[k];
+        return c;
+      }
+    } catch (e) {}
+    return JSON.parse(JSON.stringify(CFG_PADRAO));
+  }
+  function salvarCfg() {
+    try { localStorage.setItem('cfgInsulina', JSON.stringify(cfg)); } catch (e) {}
+  }
+  function carregarHistorico() {
+    try { return JSON.parse(localStorage.getItem('historicoGlicose')) || []; } catch (e) { return []; }
+  }
+  function salvarHistorico() {
+    try { localStorage.setItem('historicoGlicose', JSON.stringify(historico.slice(0, 200))); } catch (e) {}
+  }
+
+  // ---------- Alvo por horário ----------
+  function alvoAtivo() {
+    var h = new Date().getHours();
+    var noite = (h >= 22 || h < 6);
+    return { valor: noite ? cfg.alvoNoite : cfg.alvoDia, noite: noite };
+  }
+  function marcarAlvoAtivo() {
+    var a = alvoAtivo();
+    $('badgeDia').textContent = a.noite ? '' : '· em uso agora';
+    $('badgeNoite').textContent = a.noite ? '· em uso agora' : '';
+  }
+
+  // ---------- Insulina ativa (IOB) ----------
+  // Decaimento linear: tende a SUPERESTIMAR a insulina restante,
+  // o que reduz a dose sugerida (mais conservador contra hipoglicemia).
+  function calcularIob() {
+    var unidades = parseNum($('unidadesUltima').value);
+    var hora = $('horaUltima').value; // "HH:MM"
+    if (unidades === null || !hora) return 0;
+
+    var partes = hora.split(':');
+    var aplicacao = new Date();
+    aplicacao.setHours(Number(partes[0]), Number(partes[1]), 0, 0);
+    var agora = new Date();
+    if (aplicacao > agora) aplicacao.setDate(aplicacao.getDate() - 1); // foi ontem
+
+    var horasPassadas = (agora - aplicacao) / 3600000;
+    if (horasPassadas >= cfg.duracao) return 0;
+    return unidades * (1 - horasPassadas / cfg.duracao);
+  }
+
+  // ---------- Régua ----------
+  function posicaoNaRegua(gMg) {
+    var pontos = [[40, 0], [70, 10], [180, 40], [250, 65], [400, 100]];
+    if (gMg <= 40) return 0;
+    if (gMg >= 400) return 100;
+    for (var i = 1; i < pontos.length; i++) {
+      if (gMg <= pontos[i][0]) {
+        var p0 = pontos[i - 1], p1 = pontos[i];
+        return p0[1] + (gMg - p0[0]) / (p1[0] - p0[0]) * (p1[1] - p0[1]);
+      }
+    }
+    return 100;
+  }
+  function atualizarLegendaRegua() {
+    var marcas = [40, 70, 180, 250, 400];
+    var spans = $('reguaLegenda').children;
+    for (var i = 0; i < marcas.length; i++) {
+      var v = cfg.unidade === 'mmol' ? fmt(marcas[i] / FATOR_MMOL, 1) : String(marcas[i]);
+      spans[i].textContent = v + (i === marcas.length - 1 ? '+' : '');
+    }
+  }
+
+  // ---------- Cálculo principal ----------
+  function calcular() {
+    marcarAlvoAtivo();
+
+    var painel = $('resultado');
+    var marcador = $('marcador');
+    var btnSalvar = $('btnSalvar');
+    var avisoCetonas = $('avisoCetonas');
+    var avisoMaximo = $('avisoMaximo');
+
+    avisoCetonas.className = 'aviso cetonas';
+    avisoMaximo.className = 'aviso maximo';
+    btnSalvar.className = 'botao-principal';
+    btnSalvar.textContent = 'Salvar no histórico';
+    ultimoCalculo = null;
+
+    var entrada = parseNum($('glicose').value);
+    if (entrada === null) {
+      painel.className = 'resultado';
+      marcador.style.display = 'none';
+      $('infoIob').style.display = 'none';
+      return;
+    }
+
+    var gMg = paraMg(entrada);
+    marcador.style.display = 'block';
+    marcador.style.left = 'calc(' + posicaoNaRegua(gMg).toFixed(1) + '% - 2px)';
+
+    // Insulina ativa
+    var iob = calcularIob();
+    var infoIob = $('infoIob');
+    if (iob > 0) {
+      infoIob.style.display = 'block';
+      infoIob.textContent = 'Insulina ainda ativa agora: ' + fmt(Math.round(iob * 10) / 10, 1) + ' U';
+    } else {
+      infoIob.style.display = 'none';
+    }
+
+    // Hipoglicemia: bloqueia tudo
+    if (gMg < 70) {
+      painel.className = 'resultado visivel hipo';
+      painel.innerHTML =
+        '<div class="rotulo">Hipoglicemia — não aplique insulina</div>' +
+        '<div class="mensagem" style="margin-top:8px">Glicemia abaixo de ' +
+        fmtGlicose(70) + ' ' + rotuloUnidade() + '. Trate a hipoglicemia ' +
+        '(ex.: 15 g de carboidrato rápido) e meça novamente em 15 minutos. ' +
+        'Se necessário, procure orientação médica.</div>';
+      return;
+    }
+
+    // Alerta de cetonas
+    if (gMg >= 250) avisoCetonas.className = 'aviso cetonas visivel';
+
+    var alvo = alvoAtivo();
+    var carbs = parseNum($('carbs').value) || 0;
+
+    var correcao = gMg > alvo.valor ? (gMg - alvo.valor) / cfg.fsi : 0;
+    var refeicao = carbs > 0 ? carbs / cfg.icr : 0;
+    var totalExato = correcao + refeicao - iob;
+    var dose = Math.max(0, Math.floor(totalExato * 2) / 2); // passos de 0,5 U, para baixo
+
+    var limitada = false;
+    if (dose > cfg.doseMax) {
+      limitada = true;
+      avisoMaximo.className = 'aviso maximo visivel';
+      avisoMaximo.innerHTML =
+        '⚠ O cálculo resultou em <strong>' + fmt(dose, 1) + ' U</strong>, acima da sua ' +
+        'dose máxima configurada (' + fmt(cfg.doseMax, 1) + ' U). A dose exibida foi ' +
+        'limitada ao máximo. Fale com seu médico antes de aplicar mais que isso.';
+      dose = cfg.doseMax;
+    }
+
+    ultimoCalculo = {
+      ts: Date.now(),
+      glicose: Math.round(gMg),
+      carbs: carbs,
+      iob: Math.round(iob * 10) / 10,
+      dose: dose,
+      alvo: alvo.valor,
+      fsi: cfg.fsi
+    };
+    btnSalvar.className = 'botao-principal visivel';
+
+    if (dose === 0) {
+      painel.className = 'resultado visivel ok';
+      var motivo;
+      if (gMg <= alvo.valor && carbs === 0) {
+        motivo = 'Sua glicose está no alvo ou abaixo dele. Nenhuma insulina de correção é necessária.';
+      } else if (iob > 0 && totalExato <= 0) {
+        motivo = 'A insulina da sua última aplicação (' + fmt(Math.round(iob * 10) / 10, 1) +
+          ' U ainda ativa) já cobre o necessário. Aplicar agora poderia causar hipoglicemia.';
+      } else {
+        motivo = 'O valor calculado é menor que meia unidade. Nenhuma aplicação é necessária.';
+      }
+      painel.innerHTML =
+        '<div class="rotulo">Sem aplicação</div>' +
+        '<div class="mensagem" style="margin-top:8px">' + motivo + '</div>';
+      return;
+    }
+
+    // Painel de dose com detalhamento
+    var linhas = '';
+    if (correcao > 0) {
+      linhas += '<div><span>Correção (' + fmtGlicose(gMg) + ' − ' + fmtGlicose(alvo.valor) +
+        ') ÷ ' + fmtGlicose(cfg.fsi) + '</span><span>' + fmt(Math.round(correcao * 100) / 100, 2) + ' U</span></div>';
+    }
+    if (refeicao > 0) {
+      linhas += '<div><span>Refeição (' + fmt(carbs, 0) + ' g ÷ ' + fmt(cfg.icr, 0) +
+        ')</span><span>' + fmt(Math.round(refeicao * 100) / 100, 2) + ' U</span></div>';
+    }
+    if (iob > 0) {
+      linhas += '<div><span>Insulina ativa</span><span>− ' + fmt(Math.round(iob * 100) / 100, 2) + ' U</span></div>';
+    }
+    linhas += '<div class="total"><span>Total' + (limitada ? ' (limitado)' : '') +
+      '</span><span>' + fmt(dose, 1) + ' U</span></div>';
+
+    painel.className = 'resultado visivel dose';
+    painel.innerHTML =
+      '<div class="rotulo">' + (refeicao > 0 ? 'Dose total (correção + refeição)' : 'Dose de correção') + '</div>' +
+      '<div class="valor">' + fmt(dose, 1) + ' <small>unidade' + (dose === 1 ? '' : 's') + '</small></div>' +
+      '<div class="detalhe-doses">' + linhas + '</div>';
+  }
+
+  // ---------- Histórico ----------
+  function renderizarHistorico() {
+    var lista = $('listaHistorico');
+    var graficoWrap = $('graficoWrap');
+
+    if (historico.length === 0) {
+      lista.innerHTML = '<div class="historico-vazio">Nenhuma medição salva ainda. ' +
+        'Faça um cálculo e toque em "Salvar no histórico".</div>';
+      graficoWrap.innerHTML = '';
+      return;
+    }
+
+    // Gráfico: últimas 20 medições, mais antiga → mais recente
+    var pontos = historico.slice(0, 20).reverse();
+    var W = 300, H = 90, minG = 40, maxG = 400;
+    function y(g) {
+      var v = Math.min(maxG, Math.max(minG, g));
+      return H - 8 - ((v - minG) / (maxG - minG)) * (H - 16);
+    }
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Evolução da glicose">';
+    svg += '<rect x="0" y="' + y(180).toFixed(1) + '" width="' + W + '" height="' +
+      (y(70) - y(180)).toFixed(1) + '" fill="rgba(46,125,79,0.12)"/>';
+    if (pontos.length > 1) {
+      var coords = pontos.map(function (p, i) {
+        var x = pontos.length === 1 ? W / 2 : (i / (pontos.length - 1)) * (W - 12) + 6;
+        return x.toFixed(1) + ',' + y(p.glicose).toFixed(1);
+      });
+      svg += '<polyline points="' + coords.join(' ') + '" fill="none" stroke="#14776C" stroke-width="2"/>';
+    }
+    pontos.forEach(function (p, i) {
+      var x = pontos.length === 1 ? W / 2 : (i / (pontos.length - 1)) * (W - 12) + 6;
+      var ultimo = i === pontos.length - 1;
+      svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y(p.glicose).toFixed(1) +
+        '" r="' + (ultimo ? 4 : 2.5) + '" fill="' + (ultimo ? '#0D5A52' : '#14776C') + '"/>';
+    });
+    svg += '</svg>';
+    graficoWrap.innerHTML = svg +
+      '<small class="ajuda">Últimas ' + pontos.length + ' medições · faixa verde = 70–180 mg/dL</small>';
+
+    // Tabela
+    var linhas = historico.slice(0, 30).map(function (p, i) {
+      var d = new Date(p.ts);
+      var quando = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) +
+        ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return '<tr>' +
+        '<td>' + quando + '</td>' +
+        '<td>' + fmtGlicose(p.glicose) + '</td>' +
+        '<td>' + (p.carbs > 0 ? fmt(p.carbs, 0) + ' g' : '—') + '</td>' +
+        '<td>' + (p.dose > 0 ? fmt(p.dose, 1) + ' U' : '—') + '</td>' +
+        '<td class="acao"><button class="excluir" data-i="' + i + '" title="Excluir">✕</button></td>' +
+        '</tr>';
+    }).join('');
+    lista.innerHTML =
+      '<table class="historico"><thead><tr>' +
+      '<th>Quando</th><th>Glicose</th><th>Carbo</th><th>Dose</th><th></th>' +
+      '</tr></thead><tbody>' + linhas + '</tbody></table>' +
+      (historico.length > 30 ? '<small class="ajuda">Mostrando as 30 mais recentes de ' + historico.length + '.</small>' : '');
+
+    lista.querySelectorAll('.excluir').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        historico.splice(Number(btn.getAttribute('data-i')), 1);
+        salvarHistorico();
+        renderizarHistorico();
+      });
+    });
+  }
+
+  function exportarCsv() {
+    if (historico.length === 0) return;
+    var linhas = ['data;hora;glicose_mg_dl;carboidratos_g;insulina_ativa_u;dose_u;alvo_mg_dl;fsi'];
+    historico.slice().reverse().forEach(function (p) {
+      var d = new Date(p.ts);
+      linhas.push([
+        d.toLocaleDateString('pt-BR'),
+        d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        p.glicose, p.carbs || 0, String(p.iob || 0).replace('.', ','),
+        String(p.dose).replace('.', ','), p.alvo, p.fsi
+      ].join(';'));
+    });
+    var blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'historico-glicose.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ---------- Parâmetros: exibição e leitura ----------
+  function preencherParametros() {
+    $('alvoDia').value = fmtGlicose(cfg.alvoDia);
+    $('alvoNoite').value = fmtGlicose(cfg.alvoNoite);
+    $('fsi').value = fmtGlicose(cfg.fsi);
+    $('icr').value = fmt(cfg.icr);
+    $('duracao').value = fmt(cfg.duracao);
+    $('doseMax').value = fmt(cfg.doseMax);
+    $('unidadeGlicose').textContent = rotuloUnidade();
+    $('ajudaFsi').textContent = rotuloUnidade() + ' que 1 U reduz.';
+    $('glicose').placeholder = cfg.unidade === 'mmol' ? 'ex.: 19,4' : 'ex.: 350';
+    $('btnMg').className = cfg.unidade === 'mg' ? 'ativo' : '';
+    $('btnMmol').className = cfg.unidade === 'mmol' ? 'ativo' : '';
+    atualizarLegendaRegua();
+  }
+
+  function lerParametro(id, emUnidadeGlicose) {
+    var v = parseNum($(id).value);
+    if (v === null) return null;
+    return emUnidadeGlicose ? paraMg(v) : v;
+  }
+
+  function aoMudarParametros() {
+    var alvoDia = lerParametro('alvoDia', true);
+    var alvoNoite = lerParametro('alvoNoite', true);
+    var fsi = lerParametro('fsi', true);
+    var icr = lerParametro('icr', false);
+    var duracao = lerParametro('duracao', false);
+    var doseMax = lerParametro('doseMax', false);
+    if (alvoDia !== null) cfg.alvoDia = alvoDia;
+    if (alvoNoite !== null) cfg.alvoNoite = alvoNoite;
+    if (fsi !== null) cfg.fsi = fsi;
+    if (icr !== null) cfg.icr = icr;
+    if (duracao !== null) cfg.duracao = duracao;
+    if (doseMax !== null) cfg.doseMax = doseMax;
+    salvarCfg();
+    calcular();
+  }
+
+  function trocarUnidade(nova) {
+    if (cfg.unidade === nova) return;
+    // Converte o valor digitado de glicose para a nova unidade
+    var g = parseNum($('glicose').value);
+    cfg.unidade = nova;
+    if (g !== null) {
+      var gMg = nova === 'mmol' ? g : g * FATOR_MMOL; // valor estava na unidade antiga
+      $('glicose').value = nova === 'mmol' ? fmt(gMg / FATOR_MMOL, 1) : fmt(gMg, 0);
+    }
+    salvarCfg();
+    preencherParametros();
+    calcular();
+  }
+
+  // ---------- Regra 1800 / 500 ----------
+  function atualizarRegra() {
+    var tdd = parseNum($('tdd').value);
+    var caixa = $('sugestaoRegra');
+    var btn = $('btnAplicarRegra');
+    if (tdd === null) {
+      caixa.style.display = 'none';
+      btn.style.display = 'none';
+      return;
+    }
+    var fsiSugerido = Math.round(1800 / tdd);
+    var icrSugerido = Math.round(500 / tdd);
+    caixa.style.display = 'block';
+    caixa.innerHTML = 'Estimativa: FSI ≈ <strong>' + fmtGlicose(fsiSugerido) + ' ' + rotuloUnidade() +
+      '/U</strong> (1800 ÷ ' + fmt(tdd, 0) + ') · ICR ≈ <strong>1 U para ' + icrSugerido +
+      ' g</strong> (500 ÷ ' + fmt(tdd, 0) + ')';
+    btn.style.display = 'block';
+    btn.onclick = function () {
+      cfg.fsi = fsiSugerido;
+      cfg.icr = icrSugerido;
+      salvarCfg();
+      preencherParametros();
+      calcular();
+    };
+  }
+
+  // ---------- Salvar aplicação ----------
+  function salvarMedicao() {
+    if (!ultimoCalculo) return;
+    historico.unshift(ultimoCalculo);
+    salvarHistorico();
+    renderizarHistorico();
+    $('secaoHistorico').open = true;
+
+    // A dose salva vira automaticamente a "última dose" para o cálculo de insulina ativa
+    if (ultimoCalculo.dose > 0) {
+      var d = new Date(ultimoCalculo.ts);
+      $('unidadesUltima').value = fmt(ultimoCalculo.dose, 1);
+      $('horaUltima').value =
+        String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      try {
+        localStorage.setItem('ultimaDose', JSON.stringify({ ts: ultimoCalculo.ts, unidades: ultimoCalculo.dose }));
+      } catch (e) {}
+    }
+
+    var btn = $('btnSalvar');
+    btn.textContent = '✓ Salvo no histórico';
+    btn.className = 'botao-principal visivel salvo';
+    ultimoCalculo = null;
+    setTimeout(function () { btn.className = 'botao-principal'; }, 1600);
+  }
+
+  function restaurarUltimaDose() {
+    try {
+      var u = JSON.parse(localStorage.getItem('ultimaDose'));
+      if (!u) return;
+      var horas = (Date.now() - u.ts) / 3600000;
+      if (horas < cfg.duracao) {
+        var d = new Date(u.ts);
+        $('unidadesUltima').value = fmt(u.unidades, 1);
+        $('horaUltima').value =
+          String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      }
+    } catch (e) {}
+  }
+
+  // ---------- Ligações ----------
+  ['glicose', 'carbs', 'unidadesUltima', 'horaUltima'].forEach(function (id) {
+    $(id).addEventListener('input', calcular);
+  });
+  ['alvoDia', 'alvoNoite', 'fsi', 'icr', 'duracao', 'doseMax'].forEach(function (id) {
+    $(id).addEventListener('input', aoMudarParametros);
+  });
+  $('tdd').addEventListener('input', atualizarRegra);
+  $('btnMg').addEventListener('click', function () { trocarUnidade('mg'); });
+  $('btnMmol').addEventListener('click', function () { trocarUnidade('mmol'); });
+  $('btnSalvar').addEventListener('click', salvarMedicao);
+  $('btnExportar').addEventListener('click', exportarCsv);
+  $('btnLimparHistorico').addEventListener('click', function () {
+    if (confirm('Apagar todo o histórico de medições? Essa ação não pode ser desfeita.')) {
+      historico = [];
+      salvarHistorico();
+      renderizarHistorico();
+    }
+  });
+
+  // A insulina ativa diminui com o tempo: recalcula a cada minuto
+  setInterval(calcular, 60000);
+
+  // PWA: registra o service worker quando servido por http(s)
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+
+  // ---------- Início ----------
+  preencherParametros();
+  restaurarUltimaDose();
+  renderizarHistorico();
+  calcular();
+</script>
+</body>
+</html>

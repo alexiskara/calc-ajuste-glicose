@@ -1,0 +1,11 @@
+{
+  "name": "calc-ajuste-glicose",
+  "version": "1.0.0",
+  "description": "Calculadora de insulina de correção (bolus de correção) baseada na glicemia atual",
+  "main": "calculadora.js",
+  "scripts": {
+    "start": "node calculadora.js"
+  },
+  "keywords": ["glicose", "insulina", "diabetes", "bolus", "correcao"],
+  "license": "MIT"
+}
