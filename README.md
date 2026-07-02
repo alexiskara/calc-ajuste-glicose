@@ -12,8 +12,14 @@ no navegador e pode ser instalada como aplicativo no celular (PWA).
 - **Dose máxima** configurável como teto de segurança
 - **Alertas**: hipoglicemia (< 70 mg/dL) e glicose muito alta (≥ 250 mg/dL, verificação de cetonas)
 - **Histórico** com gráfico, tabela e exportação em CSV (salvo apenas no aparelho)
+- **Estatísticas**: média, tempo no alvo (70–180), HbA1c estimada (GMI) e mín–máx,
+  com filtros de 7 dias, 30 dias ou todo o período
+- **Dose aplicada editável**: registre o que realmente aplicou, não só o sugerido
+- **Lembrete de nova medição** 2 horas após registrar uma dose
+- **Backup e restauração** em arquivo JSON (para trocar de aparelho com segurança)
 - **Regras 1800 e 500** para estimativa inicial de FSI e ICR
 - **Unidades**: mg/dL ou mmol/L
+- **Modo escuro** automático, conforme o tema do aparelho
 - **Instalável** como aplicativo (PWA), funciona offline
 
 ## Como usar
