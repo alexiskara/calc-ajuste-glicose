@@ -95,7 +95,7 @@
     margin-bottom: 8px;
   }
 
-  input[type="text"], input[type="time"] {
+  input[type="text"], input[type="time"], input[type="datetime-local"], select {
     width: 100%;
     font-family: inherit;
     font-size: 1.05rem;
@@ -209,10 +209,46 @@
     font-size: 0.9rem; padding: 0 2px; opacity: 0.7; flex-shrink: 0;
   }
 
+  .check-linha { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .check-linha input { width: 18px; height: 18px; accent-color: var(--teal); }
+  .check-linha label {
+    margin: 0; text-transform: none; letter-spacing: 0;
+    font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); cursor: pointer;
+  }
+
+  .info-basal {
+    margin-top: 12px; font-size: 0.82rem; font-weight: 600;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .info-basal.pendente { color: var(--amber); }
+  .info-basal.feita { color: var(--green); }
+
+  .form-manual { background: var(--bg); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .editar {
+    background: none; border: none; color: var(--ink-soft); cursor: pointer;
+    font-size: 0.9rem; padding: 2px 6px;
+  }
+  .ctx-tag { display: block; font-size: 0.66rem; color: var(--ink-soft); }
+
+  #relatorioImpressao { display: none; }
+  @media print {
+    body { background: #fff; padding: 0; display: block; }
+    .app { display: none; }
+    #relatorioImpressao { display: block; font-family: "Segoe UI", sans-serif; color: #000; padding: 24px; }
+    #relatorioImpressao h2 { font-size: 1.15rem; margin-bottom: 2px; }
+    #relatorioImpressao h3 { font-size: 0.95rem; margin: 14px 0 4px; }
+    #relatorioImpressao p { font-size: 0.85rem; margin: 3px 0; }
+    #relatorioImpressao table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 8px; }
+    #relatorioImpressao th, #relatorioImpressao td {
+      border-bottom: 1px solid #bbb; padding: 4px 6px; text-align: left;
+    }
+  }
+
   .linha-salvar { display: none; margin-bottom: 14px; }
   .linha-salvar.visivel {
     display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: end;
   }
+  .linha-salvar .botao-principal { grid-column: 1 / -1; }
   .botao-principal {
     width: 100%; font-family: inherit; font-size: 0.95rem; font-weight: 650;
     padding: 11px 12px; border: none; border-radius: 10px;
@@ -251,7 +287,7 @@
   .filtros button.ativo { background: var(--teal-deep); color: #fff; }
 
   .estatisticas {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; margin-bottom: 14px;
   }
   .estatisticas .tile { background: var(--bg); border-radius: 10px; padding: 10px 12px; }
   .tile .num { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -339,6 +375,11 @@
       </div>
     </div>
     <div class="info-iob" id="infoIob" style="display:none"></div>
+    <div class="check-linha">
+      <input type="checkbox" id="exercicio">
+      <label for="exercicio">Vou me exercitar nas próximas horas (reduz a dose)</label>
+    </div>
+    <div class="info-basal" id="infoBasal" style="display:none"></div>
   </div>
 
   <!-- AVISOS -->
@@ -356,6 +397,10 @@
     <div>
       <label for="doseAplicada">Dose aplicada</label>
       <input id="doseAplicada" type="text" inputmode="decimal" autocomplete="off">
+    </div>
+    <div>
+      <label for="contexto">Momento</label>
+      <select id="contexto"></select>
     </div>
     <button class="botao-principal" id="btnSalvar" type="button">Salvar no histórico</button>
   </div>
@@ -393,11 +438,21 @@
           <small class="ajuda">Horas de ação (3 a 5).</small>
         </div>
       </div>
-      <div class="linha-campos">
+      <div class="linha-campos-3">
         <div>
           <label for="doseMax">Dose máxima por vez</label>
           <input id="doseMax" type="text" inputmode="decimal">
           <small class="ajuda">Teto de segurança, em unidades.</small>
+        </div>
+        <div>
+          <label for="exPct">Redução p/ exercício</label>
+          <input id="exPct" type="text" inputmode="decimal">
+          <small class="ajuda">% de desconto da dose.</small>
+        </div>
+        <div>
+          <label for="basal">Insulina basal diária</label>
+          <input id="basal" type="text" inputmode="decimal">
+          <small class="ajuda">U/dia. Vazio = não usar.</small>
         </div>
       </div>
 
@@ -428,8 +483,40 @@
       </div>
       <div class="estatisticas" id="estatisticas"></div>
       <div class="grafico-wrap" id="graficoWrap"></div>
+      <div class="form-manual" id="formManual" style="display:none">
+        <div class="linha-campos" style="margin-top:0">
+          <div>
+            <label for="dtManual">Data e hora</label>
+            <input id="dtManual" type="datetime-local">
+          </div>
+          <div>
+            <label for="gManual">Glicose</label>
+            <input id="gManual" type="text" inputmode="decimal">
+          </div>
+        </div>
+        <div class="linha-campos-3">
+          <div>
+            <label for="cManual">Carbo (g)</label>
+            <input id="cManual" type="text" inputmode="decimal" placeholder="opcional">
+          </div>
+          <div>
+            <label for="dManual">Dose (U)</label>
+            <input id="dManual" type="text" inputmode="decimal" placeholder="opcional">
+          </div>
+          <div>
+            <label for="ctxManual">Momento</label>
+            <select id="ctxManual"></select>
+          </div>
+        </div>
+        <div class="historico-acoes">
+          <button class="botao-mini" id="btnAddManual" type="button">Adicionar ao histórico</button>
+        </div>
+      </div>
       <div id="listaHistorico"></div>
       <div class="historico-acoes">
+        <button class="botao-mini" id="btnManual" type="button">Adicionar medição</button>
+        <button class="botao-mini" id="btnRelatorio" type="button">Compartilhar relatório</button>
+        <button class="botao-mini" id="btnImprimir" type="button">Imprimir / PDF</button>
         <button class="botao-mini" id="btnExportar" type="button">Exportar CSV</button>
         <button class="botao-mini" id="btnBackup" type="button">Fazer backup</button>
         <button class="botao-mini" id="btnRestaurar" type="button">Restaurar backup</button>
@@ -447,6 +534,8 @@
   </footer>
 </div>
 
+<div id="relatorioImpressao"></div>
+
 <script>
   // ---------- Constantes e estado ----------
   var FATOR_MMOL = 18; // 1 mmol/L = 18 mg/dL
@@ -459,7 +548,18 @@
     icr: 15,         // gramas por unidade
     duracao: 4,      // horas de ação da insulina
     doseMax: 10,     // unidades
-    filtroDias: 0    // 0 = todo o histórico
+    filtroDias: 0,   // 0 = todo o histórico
+    exPct: 50,       // % de redução da dose para exercício
+    basal: 0         // dose basal diária (0 = recurso desligado)
+  };
+
+  var CONTEXTOS = {
+    jj: 'Jejum',
+    ar: 'Antes da refeição',
+    dr: 'Depois da refeição',
+    ad: 'Ao deitar',
+    md: 'Madrugada',
+    pe: 'Pós exercício'
   };
 
   var cfg = carregarCfg();
@@ -476,6 +576,11 @@
   function parseNum(texto) {
     var n = Number(String(texto).trim().replace(',', '.'));
     return (isFinite(n) && n > 0) ? n : null;
+  }
+  function parseNumZ(texto) { // como parseNum, mas vazio ou zero valem 0
+    if (String(texto).trim() === '') return 0;
+    var n = Number(String(texto).trim().replace(',', '.'));
+    return (isFinite(n) && n >= 0) ? n : null;
   }
   function paraMg(valor) { return cfg.unidade === 'mmol' ? valor * FATOR_MMOL : valor; }
   function deMg(valorMg) { return cfg.unidade === 'mmol' ? valorMg / FATOR_MMOL : valorMg; }
@@ -517,8 +622,22 @@
   }
 
   // ---------- Insulina ativa (IOB) ----------
-  // Decaimento linear: tende a SUPERESTIMAR a insulina restante,
-  // o que reduz a dose sugerida (mais conservador contra hipoglicemia).
+  // Curva bilinear: a atividade da insulina sobe até o pico (~75 min para
+  // análogos rápidos) e depois cai até o fim da duração — mais próxima da
+  // ação real que o decaimento linear.
+  function fracaoIobRestante(horasPassadas, duracao) {
+    if (horasPassadas <= 0) return 1;
+    if (horasPassadas >= duracao) return 0;
+    var pico = Math.min(1.25, duracao / 2); // pico em 75 min (ou metade, se duração curta)
+    if (horasPassadas <= pico) {
+      return 1 - (horasPassadas * horasPassadas) / (duracao * pico);
+    }
+    var consumidoAtePico = pico / duracao;
+    var resta = duracao - horasPassadas;
+    var consumidoDepois = (Math.pow(duracao - pico, 2) - resta * resta) / (duracao * (duracao - pico));
+    return 1 - consumidoAtePico - consumidoDepois;
+  }
+
   function calcularIob() {
     var unidades = parseNum($('unidadesUltima').value);
     var hora = $('horaUltima').value; // "HH:MM"
@@ -531,8 +650,7 @@
     if (aplicacao > agora) aplicacao.setDate(aplicacao.getDate() - 1); // foi ontem
 
     var horasPassadas = (agora - aplicacao) / 3600000;
-    if (horasPassadas >= cfg.duracao) return 0;
-    return unidades * (1 - horasPassadas / cfg.duracao);
+    return unidades * fracaoIobRestante(horasPassadas, cfg.duracao);
   }
 
   // ---------- Régua ----------
@@ -604,7 +722,10 @@
         '<div class="mensagem" style="margin-top:8px">Glicemia abaixo de ' +
         fmtGlicose(70) + ' ' + rotuloUnidade() + '. Trate a hipoglicemia ' +
         '(ex.: 15 g de carboidrato rápido) e meça novamente em 15 minutos. ' +
-        'Se necessário, procure orientação médica.</div>';
+        'Se necessário, procure orientação médica.</div>' +
+        '<button class="botao-mini" id="btnHipo15" type="button" style="margin-top:12px">' +
+        'Tratei com 15 g — lembrar de medir em 15 min</button>';
+      $('btnHipo15').onclick = iniciarLembrete15;
       return;
     }
 
@@ -616,7 +737,10 @@
 
     var correcao = gMg > alvo.valor ? (gMg - alvo.valor) / cfg.fsi : 0;
     var refeicao = carbs > 0 ? carbs / cfg.icr : 0;
-    var totalExato = correcao + refeicao - iob;
+    var totalBruto = correcao + refeicao - iob;
+    var exercicio = $('exercicio').checked;
+    var ajusteEx = (exercicio && totalBruto > 0) ? totalBruto * cfg.exPct / 100 : 0;
+    var totalExato = totalBruto - ajusteEx;
     var dose = Math.max(0, Math.floor(totalExato * 2) / 2); // passos de 0,5 U, para baixo
 
     var limitada = false;
@@ -637,7 +761,8 @@
       iob: Math.round(iob * 10) / 10,
       dose: dose,
       alvo: alvo.valor,
-      fsi: cfg.fsi
+      fsi: cfg.fsi,
+      ex: exercicio ? 1 : 0
     };
     $('linhaSalvar').className = 'linha-salvar visivel';
     // Pré-preenche a dose aplicada com a sugerida, sem atrapalhar quem está digitando
@@ -675,6 +800,10 @@
     if (iob > 0) {
       linhas += '<div><span>Insulina ativa</span><span>− ' + fmt(Math.round(iob * 100) / 100, 2) + ' U</span></div>';
     }
+    if (ajusteEx > 0) {
+      linhas += '<div><span>Exercício (−' + fmt(cfg.exPct, 0) + '%)</span><span>− ' +
+        fmt(Math.round(ajusteEx * 100) / 100, 2) + ' U</span></div>';
+    }
     linhas += '<div class="total"><span>Total' + (limitada ? ' (limitado)' : '') +
       '</span><span>' + fmt(dose, 1) + ' U</span></div>';
 
@@ -698,10 +827,7 @@
     });
   }
 
-  function renderizarEstatisticas(pontos) {
-    var caixa = $('estatisticas');
-    if (pontos.length === 0) { caixa.innerHTML = ''; return; }
-
+  function calcularEstatisticas(pontos) {
     var soma = 0, noAlvo = 0, min = Infinity, max = -Infinity;
     pontos.forEach(function (p) {
       soma += p.glicose;
@@ -710,20 +836,59 @@
       if (p.glicose > max) max = p.glicose;
     });
     var media = soma / pontos.length;
-    var tir = (noAlvo / pontos.length) * 100;
-    // GMI: HbA1c estimada a partir da média de glicose (Bergenstal et al., 2018)
-    var gmi = 3.31 + 0.02392 * media;
+
+    var variancia = 0;
+    pontos.forEach(function (p) { variancia += Math.pow(p.glicose - media, 2); });
+    var cv = media > 0 ? (Math.sqrt(variancia / pontos.length) / media) * 100 : 0;
+
+    var porCtx = {};
+    pontos.forEach(function (p) {
+      if (p.ctx && CONTEXTOS[p.ctx]) {
+        if (!porCtx[p.ctx]) porCtx[p.ctx] = { n: 0, soma: 0 };
+        porCtx[p.ctx].n++;
+        porCtx[p.ctx].soma += p.glicose;
+      }
+    });
+
+    return {
+      n: pontos.length,
+      media: media,
+      tir: (noAlvo / pontos.length) * 100,
+      // GMI: HbA1c estimada a partir da média de glicose (Bergenstal et al., 2018)
+      gmi: 3.31 + 0.02392 * media,
+      cv: cv,
+      min: min,
+      max: max,
+      porCtx: porCtx
+    };
+  }
+
+  function renderizarEstatisticas(pontos) {
+    var caixa = $('estatisticas');
+    if (pontos.length === 0) { caixa.innerHTML = ''; return; }
+    var e = calcularEstatisticas(pontos);
+
+    var ctxHtml = '';
+    for (var k in e.porCtx) {
+      ctxHtml += (ctxHtml ? ' · ' : '') + CONTEXTOS[k] + ': ' +
+        fmtGlicose(Math.round(e.porCtx[k].soma / e.porCtx[k].n)) + ' (' + e.porCtx[k].n + '×)';
+    }
 
     caixa.innerHTML =
-      '<div class="tile"><div class="num">' + fmtGlicose(Math.round(media)) +
+      '<div class="tile"><div class="num">' + fmtGlicose(Math.round(e.media)) +
         '</div><div class="leg">Média (' + rotuloUnidade() + ')</div></div>' +
-      '<div class="tile"><div class="num">' + fmt(Math.round(tir), 0) +
+      '<div class="tile"><div class="num">' + fmt(Math.round(e.tir), 0) +
         '%</div><div class="leg">No alvo (70–180)</div></div>' +
-      '<div class="tile"><div class="num">' + fmt(Math.round(gmi * 10) / 10, 1) +
+      '<div class="tile"><div class="num">' + fmt(Math.round(e.gmi * 10) / 10, 1) +
         '%</div><div class="leg">HbA1c estimada</div></div>' +
-      '<div class="tile"><div class="num">' + fmtGlicose(min) + '–' + fmtGlicose(max) +
+      '<div class="tile"><div class="num">' + (e.n >= 2 ? fmt(Math.round(e.cv), 0) + '%' : '—') +
+        '</div><div class="leg">Variação (meta ≤36%)</div></div>' +
+      '<div class="tile"><div class="num">' + fmtGlicose(e.min) + '–' + fmtGlicose(e.max) +
         '</div><div class="leg">Mín–Máx</div></div>' +
-      (pontos.length < 7
+      (ctxHtml
+        ? '<small class="ajuda" style="grid-column:1/-1">Média por momento — ' + ctxHtml + '</small>'
+        : '') +
+      (e.n < 7
         ? '<small class="ajuda" style="grid-column:1/-1">Estimativas ficam mais confiáveis com registros frequentes por 14 dias ou mais.</small>'
         : '');
   }
@@ -746,9 +911,14 @@
       return;
     }
 
-    // Gráfico: últimas 20 medições do período, mais antiga → mais recente
+    // Gráfico: últimas 20 medições do período, posicionadas pelo tempo real
     var pontos = filtrados.slice(0, 20).reverse();
     var W = 300, H = 90, minG = 40, maxG = 400;
+    var t0 = pontos[0].ts, t1 = pontos[pontos.length - 1].ts;
+    function x(ts) {
+      if (t1 === t0) return W / 2;
+      return 6 + ((ts - t0) / (t1 - t0)) * (W - 12);
+    }
     function y(g) {
       var v = Math.min(maxG, Math.max(minG, g));
       return H - 8 - ((v - minG) / (maxG - minG)) * (H - 16);
@@ -757,33 +927,42 @@
     svg += '<rect x="0" y="' + y(180).toFixed(1) + '" width="' + W + '" height="' +
       (y(70) - y(180)).toFixed(1) + '" style="fill:var(--banda)"/>';
     if (pontos.length > 1) {
-      var coords = pontos.map(function (p, i) {
-        var x = (i / (pontos.length - 1)) * (W - 12) + 6;
-        return x.toFixed(1) + ',' + y(p.glicose).toFixed(1);
+      var coords = pontos.map(function (p) {
+        return x(p.ts).toFixed(1) + ',' + y(p.glicose).toFixed(1);
       });
       svg += '<polyline points="' + coords.join(' ') + '" fill="none" style="stroke:var(--teal)" stroke-width="2"/>';
     }
     pontos.forEach(function (p, i) {
-      var x = pontos.length === 1 ? W / 2 : (i / (pontos.length - 1)) * (W - 12) + 6;
       var ultimo = i === pontos.length - 1;
-      svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y(p.glicose).toFixed(1) +
+      svg += '<circle cx="' + x(p.ts).toFixed(1) + '" cy="' + y(p.glicose).toFixed(1) +
         '" r="' + (ultimo ? 4 : 2.5) + '" style="fill:var(--teal)"/>';
     });
     svg += '</svg>';
+    var fmtData = function (ts) {
+      return new Date(ts).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    };
     graficoWrap.innerHTML = svg +
-      '<small class="ajuda">Últimas ' + pontos.length + ' medições do período · faixa verde = 70–180 mg/dL</small>';
+      '<small class="ajuda">' + pontos.length + ' medições · ' + fmtData(t0) +
+      (t1 !== t0 ? ' a ' + fmtData(t1) : '') +
+      ' · eixo horizontal proporcional ao tempo · faixa verde = 70–180 mg/dL</small>';
 
     // Tabela
     var linhas = filtrados.slice(0, 30).map(function (p) {
       var d = new Date(p.ts);
       var quando = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) +
         ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      var extras = [];
+      if (p.ctx && CONTEXTOS[p.ctx]) extras.push(CONTEXTOS[p.ctx]);
+      if (p.ex) extras.push('exercício');
       return '<tr>' +
-        '<td>' + quando + '</td>' +
+        '<td>' + quando +
+          (extras.length ? '<span class="ctx-tag">' + extras.join(' · ') + '</span>' : '') + '</td>' +
         '<td>' + fmtGlicose(p.glicose) + '</td>' +
         '<td>' + (p.carbs > 0 ? fmt(p.carbs, 0) + ' g' : '—') + '</td>' +
         '<td>' + (p.dose > 0 ? fmt(p.dose, 1) + ' U' : '—') + '</td>' +
-        '<td class="acao"><button class="excluir" data-ts="' + p.ts + '" title="Excluir">✕</button></td>' +
+        '<td class="acao">' +
+          '<button class="editar" data-ts="' + p.ts + '" title="Editar">✎</button>' +
+          '<button class="excluir" data-ts="' + p.ts + '" title="Excluir">✕</button></td>' +
         '</tr>';
     }).join('');
     lista.innerHTML =
@@ -803,18 +982,55 @@
         }
       });
     });
+
+    lista.querySelectorAll('.editar').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var ts = Number(btn.getAttribute('data-ts'));
+        var p = null;
+        historico.forEach(function (x) { if (x.ts === ts) p = x; });
+        if (!p) return;
+        var tr = btn.closest('tr');
+        tr.innerHTML = '<td colspan="5">' +
+          '<div class="linha-campos-3" style="margin-top:4px">' +
+          '<div><label>Glicose</label><input class="ed-g" type="text" inputmode="decimal" value="' +
+            fmtGlicose(p.glicose) + '"></div>' +
+          '<div><label>Carbo (g)</label><input class="ed-c" type="text" inputmode="decimal" value="' +
+            (p.carbs || '') + '"></div>' +
+          '<div><label>Dose (U)</label><input class="ed-d" type="text" inputmode="decimal" value="' +
+            String(p.dose || 0).replace('.', ',') + '"></div>' +
+          '</div><div class="historico-acoes">' +
+          '<button class="botao-mini ed-ok" type="button">Salvar alteração</button>' +
+          '<button class="botao-mini ed-cancela" type="button">Cancelar</button></div></td>';
+        tr.querySelector('.ed-cancela').onclick = renderizarHistorico;
+        tr.querySelector('.ed-ok').onclick = function () {
+          var g = parseNum(tr.querySelector('.ed-g').value);
+          var c = parseNumZ(tr.querySelector('.ed-c').value);
+          var dU = parseNumZ(tr.querySelector('.ed-d').value);
+          if (g === null || c === null || dU === null) {
+            alert('Há valores inválidos. Confira a glicose, o carboidrato e a dose.');
+            return;
+          }
+          p.glicose = Math.round(paraMg(g));
+          p.carbs = c;
+          p.dose = dU;
+          salvarHistorico();
+          renderizarHistorico();
+        };
+      });
+    });
   }
 
   function exportarCsv() {
     if (historico.length === 0) return;
-    var linhas = ['data;hora;glicose_mg_dl;carboidratos_g;insulina_ativa_u;dose_u;alvo_mg_dl;fsi'];
+    var linhas = ['data;hora;glicose_mg_dl;carboidratos_g;insulina_ativa_u;dose_u;alvo_mg_dl;fsi;momento;exercicio'];
     historico.slice().reverse().forEach(function (p) {
       var d = new Date(p.ts);
       linhas.push([
         d.toLocaleDateString('pt-BR'),
         d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         p.glicose, p.carbs || 0, String(p.iob || 0).replace('.', ','),
-        String(p.dose).replace('.', ','), p.alvo, p.fsi
+        String(p.dose).replace('.', ','), p.alvo || '', p.fsi,
+        (p.ctx && CONTEXTOS[p.ctx]) || '', p.ex ? 'sim' : ''
       ].join(';'));
     });
     var blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -825,6 +1041,161 @@
     URL.revokeObjectURL(a.href);
   }
 
+  // ---------- Relatório para o médico ----------
+  function textoRelatorio() {
+    var pts = historicoFiltrado();
+    if (pts.length === 0) return null;
+    var e = calcularEstatisticas(pts);
+    var ini = new Date(pts[pts.length - 1].ts).toLocaleDateString('pt-BR');
+    var fim = new Date(pts[0].ts).toLocaleDateString('pt-BR');
+    var periodo = cfg.filtroDias ? 'últimos ' + cfg.filtroDias + ' dias' : 'todo o período';
+
+    var texto = 'RELATÓRIO DE GLICEMIAS (' + periodo + ')\n' +
+      'Período: ' + ini + ' a ' + fim + ' · ' + e.n + ' medições\n\n' +
+      'Média: ' + fmtGlicose(Math.round(e.media)) + ' ' + rotuloUnidade() + '\n' +
+      'Tempo no alvo (70–180 mg/dL): ' + Math.round(e.tir) + '%\n' +
+      'HbA1c estimada (GMI): ' + fmt(Math.round(e.gmi * 10) / 10, 1) + '%\n' +
+      (e.n >= 2 ? 'Variabilidade (CV): ' + Math.round(e.cv) + '% (meta ≤36%)\n' : '') +
+      'Mínima–Máxima: ' + fmtGlicose(e.min) + '–' + fmtGlicose(e.max) + ' ' + rotuloUnidade() + '\n';
+
+    var temCtx = false;
+    for (var k in e.porCtx) {
+      if (!temCtx) { texto += '\nMédia por momento:\n'; temCtx = true; }
+      texto += '- ' + CONTEXTOS[k] + ': ' + fmtGlicose(Math.round(e.porCtx[k].soma / e.porCtx[k].n)) +
+        ' ' + rotuloUnidade() + ' (' + e.porCtx[k].n + ' medições)\n';
+    }
+
+    texto += '\nParâmetros em uso: alvo ' + fmtGlicose(cfg.alvoDia) +
+      (cfg.alvoNoite !== cfg.alvoDia ? ' (noturno ' + fmtGlicose(cfg.alvoNoite) + ')' : '') +
+      ' · FSI ' + fmtGlicose(cfg.fsi) + ' · ICR 1 U/' + fmt(cfg.icr, 0) + ' g\n' +
+      'Gerado pela Calculadora de Correção de Insulina.';
+    return texto;
+  }
+
+  function compartilharRelatorio() {
+    var texto = textoRelatorio();
+    if (!texto) { alert('Nenhuma medição no período para gerar o relatório.'); return; }
+    if (navigator.share) {
+      navigator.share({ title: 'Relatório de glicemias', text: texto }).catch(function () {});
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(function () {
+        alert('Relatório copiado! Cole no WhatsApp, e-mail ou onde preferir.');
+      }, function () { alert(texto); });
+    } else {
+      alert(texto);
+    }
+  }
+
+  function imprimirRelatorio() {
+    var pts = historicoFiltrado();
+    if (pts.length === 0) { alert('Nenhuma medição no período para imprimir.'); return; }
+    var e = calcularEstatisticas(pts);
+    var ini = new Date(pts[pts.length - 1].ts).toLocaleDateString('pt-BR');
+    var fim = new Date(pts[0].ts).toLocaleDateString('pt-BR');
+
+    var html = '<h2>Relatório de glicemias</h2>' +
+      '<p>Período: ' + ini + ' a ' + fim + ' · ' + e.n + ' medições · Unidade: ' + rotuloUnidade() + '</p>' +
+      '<p><strong>Média:</strong> ' + fmtGlicose(Math.round(e.media)) +
+      ' · <strong>No alvo (70–180):</strong> ' + Math.round(e.tir) + '%' +
+      ' · <strong>HbA1c estimada:</strong> ' + fmt(Math.round(e.gmi * 10) / 10, 1) + '%' +
+      (e.n >= 2 ? ' · <strong>CV:</strong> ' + Math.round(e.cv) + '%' : '') +
+      ' · <strong>Mín–Máx:</strong> ' + fmtGlicose(e.min) + '–' + fmtGlicose(e.max) + '</p>';
+
+    var temCtx = false;
+    for (var k in e.porCtx) {
+      if (!temCtx) { html += '<h3>Média por momento</h3>'; temCtx = true; }
+      html += '<p>' + CONTEXTOS[k] + ': ' + fmtGlicose(Math.round(e.porCtx[k].soma / e.porCtx[k].n)) +
+        ' (' + e.porCtx[k].n + ' medições)</p>';
+    }
+
+    html += '<h3>Medições</h3><table><tr><th>Data</th><th>Hora</th><th>Glicose</th>' +
+      '<th>Carbo</th><th>Dose</th><th>Momento</th></tr>';
+    pts.slice(0, 200).forEach(function (p) {
+      var d = new Date(p.ts);
+      html += '<tr><td>' + d.toLocaleDateString('pt-BR') + '</td>' +
+        '<td>' + horaLocal(p.ts) + '</td>' +
+        '<td>' + fmtGlicose(p.glicose) + '</td>' +
+        '<td>' + (p.carbs > 0 ? fmt(p.carbs, 0) + ' g' : '—') + '</td>' +
+        '<td>' + (p.dose > 0 ? fmt(p.dose, 1) + ' U' : '—') + '</td>' +
+        '<td>' + ((p.ctx && CONTEXTOS[p.ctx]) || '') + (p.ex ? ' (exercício)' : '') + '</td></tr>';
+    });
+    html += '</table><p style="margin-top:10px">Gerado pela Calculadora de Correção de Insulina — ' +
+      'ferramenta de apoio; não substitui avaliação médica.</p>';
+
+    $('relatorioImpressao').innerHTML = html;
+    window.print();
+  }
+
+  // ---------- Insulina basal ----------
+  function chaveHoje() { return new Date().toLocaleDateString('pt-BR'); }
+
+  function renderizarBasal() {
+    var caixa = $('infoBasal');
+    if (!cfg.basal || cfg.basal <= 0) { caixa.style.display = 'none'; return; }
+    var reg = null;
+    try { reg = JSON.parse(localStorage.getItem('basalRegistro')); } catch (e) {}
+    caixa.style.display = 'flex';
+    if (reg && reg.dia === chaveHoje()) {
+      caixa.className = 'info-basal feita';
+      caixa.innerHTML = '✓ Basal de hoje (' + fmt(cfg.basal, 1) + ' U) registrada às ' + horaLocal(reg.ts) + '.';
+    } else {
+      caixa.className = 'info-basal pendente';
+      caixa.innerHTML = '<span>Basal de hoje (' + fmt(cfg.basal, 1) + ' U) ainda não registrada.</span>' +
+        '<button class="botao-mini" id="btnBasal" type="button">Registrar agora</button>';
+      $('btnBasal').onclick = function () {
+        try {
+          localStorage.setItem('basalRegistro', JSON.stringify({ dia: chaveHoje(), ts: Date.now() }));
+        } catch (e) {}
+        renderizarBasal();
+      };
+    }
+  }
+
+  // ---------- Medição manual ----------
+  function dtLocalValor(ts) {
+    var d = new Date(ts - new Date().getTimezoneOffset() * 60000);
+    return d.toISOString().slice(0, 16);
+  }
+
+  function adicionarManual() {
+    var g = parseNum($('gManual').value);
+    var c = parseNumZ($('cManual').value);
+    var dU = parseNumZ($('dManual').value);
+    var ts = new Date($('dtManual').value).getTime();
+    if (g === null) { alert('Informe a glicose da medição.'); return; }
+    if (c === null || dU === null) { alert('Carboidrato ou dose com valor inválido.'); return; }
+    if (!isFinite(ts)) { alert('Informe a data e a hora da medição.'); return; }
+
+    var registro = {
+      ts: ts,
+      glicose: Math.round(paraMg(g)),
+      carbs: c,
+      iob: 0,
+      dose: dU,
+      alvo: alvoAtivo().valor,
+      fsi: cfg.fsi
+    };
+    if ($('ctxManual').value) registro.ctx = $('ctxManual').value;
+    historico.push(registro);
+    historico.sort(function (a, b) { return b.ts - a.ts; });
+    salvarHistorico();
+    renderizarHistorico();
+    $('formManual').style.display = 'none';
+    $('gManual').value = '';
+    $('cManual').value = '';
+    $('dManual').value = '';
+    $('ctxManual').value = '';
+  }
+
+  function preencherContextos() {
+    ['contexto', 'ctxManual'].forEach(function (id) {
+      var sel = $(id);
+      var opcoes = '<option value="">— sem marcação</option>';
+      for (var k in CONTEXTOS) opcoes += '<option value="' + k + '">' + CONTEXTOS[k] + '</option>';
+      sel.innerHTML = opcoes;
+    });
+  }
+
   // ---------- Parâmetros: exibição e leitura ----------
   function preencherParametros() {
     $('alvoDia').value = fmtGlicose(cfg.alvoDia);
@@ -833,6 +1204,8 @@
     $('icr').value = fmt(cfg.icr);
     $('duracao').value = fmt(cfg.duracao);
     $('doseMax').value = fmt(cfg.doseMax);
+    $('exPct').value = fmt(cfg.exPct);
+    $('basal').value = cfg.basal > 0 ? fmt(cfg.basal, 1) : '';
     $('unidadeGlicose').textContent = rotuloUnidade();
     $('ajudaFsi').textContent = rotuloUnidade() + ' que 1 U reduz.';
     $('glicose').placeholder = cfg.unidade === 'mmol' ? 'ex.: 19,4' : 'ex.: 350';
@@ -854,13 +1227,18 @@
     var icr = lerParametro('icr', false);
     var duracao = lerParametro('duracao', false);
     var doseMax = lerParametro('doseMax', false);
+    var exPct = lerParametro('exPct', false);
+    var basal = parseNumZ($('basal').value); // vazio ou 0 desliga o recurso
     if (alvoDia !== null) cfg.alvoDia = alvoDia;
     if (alvoNoite !== null) cfg.alvoNoite = alvoNoite;
     if (fsi !== null) cfg.fsi = fsi;
     if (icr !== null) cfg.icr = icr;
     if (duracao !== null) cfg.duracao = duracao;
     if (doseMax !== null) cfg.doseMax = doseMax;
+    if (exPct !== null && exPct < 100) cfg.exPct = exPct;
+    if (basal !== null) cfg.basal = basal;
     salvarCfg();
+    renderizarBasal();
     calcular();
   }
 
@@ -904,10 +1282,59 @@
     };
   }
 
-  // ---------- Lembrete de nova medição ----------
+  // ---------- Lembretes e notificações ----------
   function horaLocal(ts) {
     var d = new Date(ts);
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  var timerNotificacao = null;
+
+  function agendarNotificacao(alvoTs, texto) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then(function (p) {
+        if (p === 'granted') agendarNotificacao(alvoTs, texto);
+      });
+      return;
+    }
+    if (Notification.permission !== 'granted') return;
+    if (timerNotificacao) clearTimeout(timerNotificacao);
+    var espera = alvoTs - Date.now();
+    if (espera <= 0) return;
+    timerNotificacao = setTimeout(function () {
+      try {
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.getRegistration().then(function (reg) {
+            if (reg) reg.showNotification('Correção de Insulina', { body: texto, icon: 'icone.svg' });
+          });
+        } else {
+          new Notification('Correção de Insulina', { body: texto });
+        }
+      } catch (e) {}
+    }, espera);
+  }
+
+  function textoNotificacao(tipo) {
+    return tipo === 'hipo'
+      ? 'Regra 15/15: hora de medir a glicose novamente.'
+      : 'Hora de medir a glicose para conferir o efeito da dose.';
+  }
+
+  function reagendarNotificacao() {
+    try {
+      var d = JSON.parse(localStorage.getItem('proximaMedicao'));
+      if (d && d.alvoTs > Date.now()) agendarNotificacao(d.alvoTs, textoNotificacao(d.tipo));
+    } catch (e) {}
+  }
+
+  function iniciarLembrete15() {
+    var alvo = Date.now() + 15 * 60000;
+    try {
+      localStorage.setItem('proximaMedicao', JSON.stringify({ alvoTs: alvo, tipo: 'hipo' }));
+    } catch (e) {}
+    agendarNotificacao(alvo, textoNotificacao('hipo'));
+    renderizarLembrete();
   }
 
   function renderizarLembrete() {
@@ -919,15 +1346,24 @@
       return;
     }
     var hora = horaLocal(dados.alvoTs);
-    var texto = Date.now() < dados.alvoTs
-      ? '⏱ Dose registrada. Meça novamente por volta das <strong>' + hora +
-        '</strong> para acompanhar o efeito.'
-      : '⏱ Já passou das <strong>' + hora + '</strong> — meça novamente para ver se a dose funcionou.';
+    var texto;
+    if (dados.tipo === 'hipo') {
+      texto = Date.now() < dados.alvoTs
+        ? '⏱ Regra 15/15: meça novamente às <strong>' + hora +
+          '</strong> para confirmar que a glicose subiu.'
+        : '⏱ Já passou das <strong>' + hora + '</strong> — meça agora para confirmar a recuperação da hipoglicemia.';
+    } else {
+      texto = Date.now() < dados.alvoTs
+        ? '⏱ Dose registrada. Meça novamente por volta das <strong>' + hora +
+          '</strong> para acompanhar o efeito.'
+        : '⏱ Já passou das <strong>' + hora + '</strong> — meça novamente para ver se a dose funcionou.';
+    }
     caixa.innerHTML = '<div class="aviso-conteudo"><span>' + texto +
       '</span><button class="fechar-aviso" id="btnFecharLembrete" type="button" title="Dispensar">✕</button></div>';
     caixa.className = 'aviso remedicao visivel';
     $('btnFecharLembrete').onclick = function () {
       try { localStorage.removeItem('proximaMedicao'); } catch (e) {}
+      if (timerNotificacao) clearTimeout(timerNotificacao);
       renderizarLembrete();
     };
   }
@@ -941,6 +1377,7 @@
     if (aplicada === null) aplicada = ultimoCalculo.dose;
     ultimoCalculo.doseSugerida = ultimoCalculo.dose;
     ultimoCalculo.dose = aplicada;
+    if ($('contexto').value) ultimoCalculo.ctx = $('contexto').value;
 
     historico.unshift(ultimoCalculo);
     salvarHistorico();
@@ -954,12 +1391,17 @@
         $('unidadesUltima').value = fmt(aplicada, 1);
         $('horaUltima').value = horaLocal(ultimoCalculo.ts);
         localStorage.setItem('ultimaDose', JSON.stringify({ ts: ultimoCalculo.ts, unidades: aplicada }));
-        localStorage.setItem('proximaMedicao', JSON.stringify({ alvoTs: ultimoCalculo.ts + 2 * 3600000 }));
+        var alvoTs = ultimoCalculo.ts + 2 * 3600000;
+        localStorage.setItem('proximaMedicao', JSON.stringify({ alvoTs: alvoTs, tipo: 'dose' }));
+        agendarNotificacao(alvoTs, textoNotificacao('dose'));
       } else {
         localStorage.removeItem('proximaMedicao'); // mediu sem aplicar: lembrete cumprido
+        if (timerNotificacao) clearTimeout(timerNotificacao);
       }
     } catch (e) {}
     renderizarLembrete();
+    $('contexto').value = '';
+    $('exercicio').checked = false;
 
     var btn = $('btnSalvar');
     btn.textContent = '✓ Salvo no histórico';
@@ -1042,7 +1484,8 @@
   ['glicose', 'carbs', 'unidadesUltima', 'horaUltima'].forEach(function (id) {
     $(id).addEventListener('input', calcular);
   });
-  ['alvoDia', 'alvoNoite', 'fsi', 'icr', 'duracao', 'doseMax'].forEach(function (id) {
+  $('exercicio').addEventListener('change', calcular);
+  ['alvoDia', 'alvoNoite', 'fsi', 'icr', 'duracao', 'doseMax', 'exPct', 'basal'].forEach(function (id) {
     $(id).addEventListener('input', aoMudarParametros);
   });
   $('tdd').addEventListener('input', atualizarRegra);
@@ -1050,6 +1493,15 @@
   $('btnMmol').addEventListener('click', function () { trocarUnidade('mmol'); });
   $('btnSalvar').addEventListener('click', salvarMedicao);
   $('btnExportar').addEventListener('click', exportarCsv);
+  $('btnRelatorio').addEventListener('click', compartilharRelatorio);
+  $('btnImprimir').addEventListener('click', imprimirRelatorio);
+  $('btnManual').addEventListener('click', function () {
+    var form = $('formManual');
+    var abrir = form.style.display === 'none';
+    form.style.display = abrir ? 'block' : 'none';
+    if (abrir && !$('dtManual').value) $('dtManual').value = dtLocalValor(Date.now());
+  });
+  $('btnAddManual').addEventListener('click', adicionarManual);
   $('btnBackup').addEventListener('click', fazerBackup);
   $('btnRestaurar').addEventListener('click', function () { $('arquivoBackup').click(); });
   $('arquivoBackup').addEventListener('change', function () {
@@ -1071,8 +1523,8 @@
     }
   });
 
-  // A insulina ativa e o lembrete mudam com o tempo: atualiza a cada minuto
-  setInterval(function () { calcular(); renderizarLembrete(); }, 60000);
+  // A insulina ativa, o lembrete e o status da basal mudam com o tempo
+  setInterval(function () { calcular(); renderizarLembrete(); renderizarBasal(); }, 60000);
 
   // PWA: registra o service worker quando servido por http(s)
   if ('serviceWorker' in navigator &&
@@ -1081,10 +1533,13 @@
   }
 
   // ---------- Início ----------
+  preencherContextos();
   preencherParametros();
   restaurarUltimaDose();
   renderizarHistorico();
   renderizarLembrete();
+  renderizarBasal();
+  reagendarNotificacao();
   calcular();
 </script>
 </body>

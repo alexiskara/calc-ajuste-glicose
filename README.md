@@ -7,13 +7,20 @@ no navegador e pode ser instalada como aplicativo no celular (PWA).
 
 - **Dose de correção**: `(glicose atual − alvo) ÷ fator de sensibilidade (FSI)`
 - **Bolus alimentar** por contagem de carboidratos (razão insulina/carboidrato)
-- **Insulina ativa (IOB)**: desconta a insulina da última aplicação que ainda está agindo
+- **Insulina ativa (IOB)** com curva bilinear (pico em ~75 min), descontada da dose
+- **Modo exercício**: redução percentual configurável da dose
 - **Alvos diurno e noturno** separados, selecionados automaticamente pelo horário
 - **Dose máxima** configurável como teto de segurança
-- **Alertas**: hipoglicemia (< 70 mg/dL) e glicose muito alta (≥ 250 mg/dL, verificação de cetonas)
+- **Alertas**: hipoglicemia (< 70 mg/dL) com temporizador da regra 15/15, e glicose
+  muito alta (≥ 250 mg/dL, verificação de cetonas)
+- **Anotação por medição** (jejum, antes/depois da refeição etc.) com média por momento
+- **Relatório para o médico**: compartilhar como texto ou imprimir/salvar em PDF
+- **Notificação** na hora de medir novamente (com o app aberto ou em segundo plano)
+- **Edição e adição manual** de registros do histórico
+- **Registro da insulina basal diária** com aviso de pendência (opcional)
 - **Histórico** com gráfico, tabela e exportação em CSV (salvo apenas no aparelho)
-- **Estatísticas**: média, tempo no alvo (70–180), HbA1c estimada (GMI) e mín–máx,
-  com filtros de 7 dias, 30 dias ou todo o período
+- **Estatísticas**: média, tempo no alvo (70–180), HbA1c estimada (GMI),
+  variabilidade (CV%) e mín–máx, com filtros de 7 dias, 30 dias ou todo o período
 - **Dose aplicada editável**: registre o que realmente aplicou, não só o sugerido
 - **Lembrete de nova medição** 2 horas após registrar uma dose
 - **Backup e restauração** em arquivo JSON (para trocar de aparelho com segurança)
