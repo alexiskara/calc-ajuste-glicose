@@ -114,24 +114,38 @@
 
   small.ajuda { display: block; margin-top: 5px; font-size: 0.72rem; color: var(--ink-soft); }
 
-  /* Unidade mg/dL | mmol/L */
-  .toggle-unidade { display: flex; border: 1.5px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .toggle-unidade button {
-    font-family: inherit; font-size: 0.75rem; font-weight: 600;
-    padding: 6px 10px; border: none; background: var(--card);
+  /* Abas */
+  .abas {
+    display: flex; border: 1.5px solid var(--line); border-radius: 10px;
+    overflow: hidden; margin-bottom: 14px; background: var(--card);
+  }
+  .abas button {
+    flex: 1; font-family: inherit; font-size: 0.9rem; font-weight: 650;
+    padding: 11px; border: none; background: var(--card);
     color: var(--ink-soft); cursor: pointer;
   }
-  .toggle-unidade button.ativo { background: var(--teal-deep); color: #fff; }
+  .abas button.ativo { background: var(--teal-deep); color: #fff; }
 
   /* Campo principal de glicose */
   .glicose-wrap { position: relative; }
-  #glicose {
+  #glicose, #gRapida {
     font-size: 2.6rem;
     font-weight: 650;
     border-width: 2px;
     border-radius: 10px;
     padding: 10px 96px 10px 16px;
   }
+
+  /* Registro rápido */
+  .aviso-rapida {
+    margin-top: 14px; border-radius: 10px; padding: 12px 14px;
+    font-size: 0.85rem; font-weight: 600; line-height: 1.5;
+  }
+  .aviso-rapida.hipo { background: var(--red-soft); color: var(--red); border: 1px solid var(--red-line); }
+  .aviso-rapida.alta { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-line); }
+  .aviso-rapida.ok   { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-line); }
+  .aviso-rapida .botao-mini { margin-top: 10px; }
+  .info-ultima { margin-top: 12px; font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); }
   .unidade {
     position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
     font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); pointer-events: none;
@@ -328,13 +342,19 @@
   <header>
     <div>
       <h1>Correção de Insulina</h1>
-      <p>Digite sua glicose e veja a dose na hora.</p>
-    </div>
-    <div class="toggle-unidade" role="group" aria-label="Unidade de glicose">
-      <button id="btnMg" class="ativo" type="button">mg/dL</button>
-      <button id="btnMmol" type="button">mmol/L</button>
+      <p>Calcule a dose de correção ou registre suas medições.</p>
     </div>
   </header>
+
+  <div class="aviso remedicao" id="avisoRemedicao"></div>
+
+  <div class="abas" role="tablist">
+    <button id="tabCalc" class="ativo" type="button">Calculadora</button>
+    <button id="tabReg" type="button">Registro</button>
+  </div>
+
+  <!-- ABA CALCULADORA -->
+  <div id="abaCalc">
 
   <!-- MEDIÇÃO -->
   <div class="card">
@@ -389,7 +409,6 @@
     enjoo/vômito, procure atendimento médico (risco de cetoacidose).
   </div>
   <div class="aviso maximo" id="avisoMaximo"></div>
-  <div class="aviso remedicao" id="avisoRemedicao"></div>
 
   <!-- RESULTADO -->
   <div class="resultado" id="resultado"></div>
@@ -472,14 +491,58 @@
     </div>
   </details>
 
+  </div><!-- fim aba calculadora -->
+
+  <!-- ABA REGISTRO -->
+  <div id="abaRegistro" style="display:none">
+
+  <div class="card">
+    <label for="gRapida">Glicose medida</label>
+    <div class="glicose-wrap">
+      <input id="gRapida" type="text" inputmode="decimal" placeholder="ex.: 150" autocomplete="off">
+      <span class="unidade">mg/dL</span>
+    </div>
+
+    <div class="regua">
+      <div class="regua-outer">
+        <div class="regua-track">
+          <div class="zona-hipo"></div>
+          <div class="zona-alvo"></div>
+          <div class="zona-alta"></div>
+          <div class="zona-muito"></div>
+        </div>
+        <div class="marcador" id="marcadorReg"></div>
+      </div>
+      <div class="regua-legenda">
+        <span>40</span><span>70</span><span>180</span><span>250</span><span>400+</span>
+      </div>
+    </div>
+
+    <div class="linha-campos">
+      <div>
+        <label for="ctxRapida">Momento</label>
+        <select id="ctxRapida"></select>
+      </div>
+      <div style="display:flex; align-items:flex-end">
+        <button class="botao-principal" id="btnSalvarRapida" type="button">Salvar medição</button>
+      </div>
+    </div>
+
+    <div class="aviso-rapida" id="avisoRapida" style="display:none"></div>
+    <div class="info-ultima" id="infoUltima"></div>
+  </div>
+
   <!-- HISTÓRICO -->
-  <details class="card" id="secaoHistorico">
+  <details class="card" id="secaoHistorico" open>
     <summary>Histórico de medições</summary>
     <div class="conteudo">
-      <div class="filtros" id="filtros" role="group" aria-label="Período">
-        <button type="button" data-dias="7">7 dias</button>
-        <button type="button" data-dias="30">30 dias</button>
-        <button type="button" data-dias="0">Tudo</button>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px">
+        <div class="filtros" id="filtros" role="group" aria-label="Período" style="margin-bottom:0">
+          <button type="button" data-dias="7">7 dias</button>
+          <button type="button" data-dias="30">30 dias</button>
+          <button type="button" data-dias="0">Tudo</button>
+        </div>
+        <select id="filtroCtx" style="width:auto; flex:1; min-width:150px; font-size:0.85rem"></select>
       </div>
       <div class="estatisticas" id="estatisticas"></div>
       <div class="grafico-wrap" id="graficoWrap"></div>
@@ -526,6 +589,8 @@
     </div>
   </details>
 
+  </div><!-- fim aba registro -->
+
   <footer>
     ⚠ Esta calculadora é apenas uma ferramenta de apoio. Todos os parâmetros
     (alvos, FSI, ICR, duração da insulina e dose máxima) devem ser definidos
@@ -549,6 +614,7 @@
     duracao: 4,      // horas de ação da insulina
     doseMax: 10,     // unidades
     filtroDias: 0,   // 0 = todo o histórico
+    filtroCtx: '',   // '' = todos os momentos
     exPct: 50,       // % de redução da dose para exercício
     basal: 0         // dose basal diária (0 = recurso desligado)
   };
@@ -594,6 +660,7 @@
       var c = JSON.parse(localStorage.getItem('cfgInsulina'));
       if (c) {
         for (var k in CFG_PADRAO) if (c[k] === undefined) c[k] = CFG_PADRAO[k];
+        c.unidade = 'mg'; // a página usa apenas mg/dL (padrão no Brasil)
         return c;
       }
     } catch (e) {}
@@ -665,14 +732,6 @@
       }
     }
     return 100;
-  }
-  function atualizarLegendaRegua() {
-    var marcas = [40, 70, 180, 250, 400];
-    var spans = $('reguaLegenda').children;
-    for (var i = 0; i < marcas.length; i++) {
-      var v = cfg.unidade === 'mmol' ? fmt(marcas[i] / FATOR_MMOL, 1) : String(marcas[i]);
-      spans[i].textContent = v + (i === marcas.length - 1 ? '+' : '');
-    }
   }
 
   // ---------- Cálculo principal ----------
@@ -816,9 +875,15 @@
 
   // ---------- Histórico ----------
   function historicoFiltrado() {
-    if (!cfg.filtroDias) return historico;
-    var limite = Date.now() - cfg.filtroDias * 86400000;
-    return historico.filter(function (p) { return p.ts >= limite; });
+    var pts = historico;
+    if (cfg.filtroDias) {
+      var limite = Date.now() - cfg.filtroDias * 86400000;
+      pts = pts.filter(function (p) { return p.ts >= limite; });
+    }
+    if (cfg.filtroCtx) {
+      pts = pts.filter(function (p) { return p.ctx === cfg.filtroCtx; });
+    }
+    return pts;
   }
 
   function marcarFiltroAtivo() {
@@ -895,6 +960,7 @@
 
   function renderizarHistorico() {
     marcarFiltroAtivo();
+    atualizarInfoUltima();
     var lista = $('listaHistorico');
     var graficoWrap = $('graficoWrap');
     var filtrados = historicoFiltrado();
@@ -904,8 +970,8 @@
     if (filtrados.length === 0) {
       lista.innerHTML = '<div class="historico-vazio">' +
         (historico.length === 0
-          ? 'Nenhuma medição salva ainda. Faça um cálculo e toque em "Salvar no histórico".'
-          : 'Nenhuma medição nesse período. Toque em "Tudo" para ver o histórico completo.') +
+          ? 'Nenhuma medição salva ainda. Registre uma medição acima ou salve um cálculo da aba Calculadora.'
+          : 'Nenhuma medição nesse filtro. Toque em "Tudo" e escolha "Todos os momentos" para ver o histórico completo.') +
         '</div>';
       graficoWrap.innerHTML = '';
       return;
@@ -1188,12 +1254,127 @@
   }
 
   function preencherContextos() {
-    ['contexto', 'ctxManual'].forEach(function (id) {
+    ['contexto', 'ctxManual', 'ctxRapida'].forEach(function (id) {
       var sel = $(id);
       var opcoes = '<option value="">— sem marcação</option>';
       for (var k in CONTEXTOS) opcoes += '<option value="' + k + '">' + CONTEXTOS[k] + '</option>';
       sel.innerHTML = opcoes;
     });
+    var filtro = $('filtroCtx');
+    var opcoesFiltro = '<option value="">Todos os momentos</option>';
+    for (var k in CONTEXTOS) opcoesFiltro += '<option value="' + k + '">' + CONTEXTOS[k] + '</option>';
+    filtro.innerHTML = opcoesFiltro;
+    filtro.value = cfg.filtroCtx || '';
+  }
+
+  // ---------- Aba Registro ----------
+  function mostrarAba(qual) {
+    var calc = qual === 'calc';
+    $('abaCalc').style.display = calc ? 'block' : 'none';
+    $('abaRegistro').style.display = calc ? 'none' : 'block';
+    $('tabCalc').className = calc ? 'ativo' : '';
+    $('tabReg').className = calc ? '' : 'ativo';
+  }
+
+  function tempoRelativo(ts) {
+    var min = Math.round((Date.now() - ts) / 60000);
+    if (min < 1) return 'agora mesmo';
+    if (min < 60) return 'há ' + min + ' min';
+    var h = Math.floor(min / 60);
+    if (h < 24) return 'há ' + h + ' h';
+    return 'em ' + new Date(ts).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) +
+      ' às ' + horaLocal(ts);
+  }
+
+  function atualizarInfoUltima() {
+    var el = $('infoUltima');
+    if (historico.length === 0) {
+      el.textContent = 'Nenhuma medição registrada ainda.';
+      return;
+    }
+    var p = historico[0];
+    el.textContent = 'Última medição: ' + fmtGlicose(p.glicose) + ' mg/dL, ' + tempoRelativo(p.ts) + '.';
+  }
+
+  function irParaCalculadora() {
+    $('glicose').value = $('gRapida').value;
+    mostrarAba('calc');
+    calcular();
+    $('glicose').focus();
+  }
+
+  function atualizarRapida() {
+    var caixa = $('avisoRapida');
+    var marcador = $('marcadorReg');
+    var g = parseNum($('gRapida').value);
+    if (g === null) {
+      caixa.style.display = 'none';
+      marcador.style.display = 'none';
+      return;
+    }
+    var gMg = paraMg(g);
+    marcador.style.display = 'block';
+    marcador.style.left = 'calc(' + posicaoNaRegua(gMg).toFixed(1) + '% - 2px)';
+    caixa.style.display = 'block';
+
+    if (gMg < 70) {
+      caixa.className = 'aviso-rapida hipo';
+      caixa.innerHTML = '⚠ Hipoglicemia! Trate com 15 g de carboidrato rápido e meça de novo em 15 minutos.' +
+        '<br><button class="botao-mini" id="btnHipo15R" type="button">Tratei — lembrar de medir em 15 min</button>';
+      $('btnHipo15R').onclick = iniciarLembrete15;
+      return;
+    }
+    var alvo = alvoAtivo().valor;
+    if (gMg >= 250) {
+      caixa.className = 'aviso-rapida alta';
+      caixa.innerHTML = '⚠ Glicose muito alta — verifique cetonas e beba água. Considere calcular a correção.' +
+        '<br><button class="botao-mini" id="btnParaCalc" type="button">Calcular correção com este valor</button>';
+      $('btnParaCalc').onclick = irParaCalculadora;
+      return;
+    }
+    if (gMg > alvo) {
+      caixa.className = 'aviso-rapida alta';
+      caixa.innerHTML = 'Acima do alvo (' + fmtGlicose(alvo) + '). Se quiser corrigir, calcule a dose.' +
+        '<br><button class="botao-mini" id="btnParaCalc" type="button">Calcular correção com este valor</button>';
+      $('btnParaCalc').onclick = irParaCalculadora;
+      return;
+    }
+    caixa.className = 'aviso-rapida ok';
+    caixa.textContent = '✓ Dentro do alvo. Nenhuma correção necessária.';
+  }
+
+  function salvarRapida() {
+    var g = parseNum($('gRapida').value);
+    if (g === null) { alert('Informe o valor da glicose medida.'); return; }
+    var registro = {
+      ts: Date.now(),
+      glicose: Math.round(paraMg(g)),
+      carbs: 0,
+      iob: 0,
+      dose: 0,
+      alvo: alvoAtivo().valor,
+      fsi: cfg.fsi
+    };
+    if ($('ctxRapida').value) registro.ctx = $('ctxRapida').value;
+    historico.unshift(registro);
+    salvarHistorico();
+    renderizarHistorico();
+
+    // Medir cumpre o lembrete de re-medição pendente
+    try { localStorage.removeItem('proximaMedicao'); } catch (e) {}
+    if (timerNotificacao) clearTimeout(timerNotificacao);
+    renderizarLembrete();
+
+    $('gRapida').value = '';
+    $('ctxRapida').value = '';
+    atualizarRapida();
+    var btn = $('btnSalvarRapida');
+    btn.textContent = '✓ Medição salva';
+    btn.className = 'botao-principal salvo';
+    setTimeout(function () {
+      btn.textContent = 'Salvar medição';
+      btn.className = 'botao-principal';
+    }, 1600);
   }
 
   // ---------- Parâmetros: exibição e leitura ----------
@@ -1206,12 +1387,6 @@
     $('doseMax').value = fmt(cfg.doseMax);
     $('exPct').value = fmt(cfg.exPct);
     $('basal').value = cfg.basal > 0 ? fmt(cfg.basal, 1) : '';
-    $('unidadeGlicose').textContent = rotuloUnidade();
-    $('ajudaFsi').textContent = rotuloUnidade() + ' que 1 U reduz.';
-    $('glicose').placeholder = cfg.unidade === 'mmol' ? 'ex.: 19,4' : 'ex.: 350';
-    $('btnMg').className = cfg.unidade === 'mg' ? 'ativo' : '';
-    $('btnMmol').className = cfg.unidade === 'mmol' ? 'ativo' : '';
-    atualizarLegendaRegua();
   }
 
   function lerParametro(id, emUnidadeGlicose) {
@@ -1239,20 +1414,6 @@
     if (basal !== null) cfg.basal = basal;
     salvarCfg();
     renderizarBasal();
-    calcular();
-  }
-
-  function trocarUnidade(nova) {
-    if (cfg.unidade === nova) return;
-    // Converte o valor digitado de glicose para a nova unidade
-    var g = parseNum($('glicose').value);
-    cfg.unidade = nova;
-    if (g !== null) {
-      var gMg = nova === 'mmol' ? g : g * FATOR_MMOL; // valor estava na unidade antiga
-      $('glicose').value = nova === 'mmol' ? fmt(gMg / FATOR_MMOL, 1) : fmt(gMg, 0);
-    }
-    salvarCfg();
-    preencherParametros();
     calcular();
   }
 
@@ -1489,8 +1650,6 @@
     $(id).addEventListener('input', aoMudarParametros);
   });
   $('tdd').addEventListener('input', atualizarRegra);
-  $('btnMg').addEventListener('click', function () { trocarUnidade('mg'); });
-  $('btnMmol').addEventListener('click', function () { trocarUnidade('mmol'); });
   $('btnSalvar').addEventListener('click', salvarMedicao);
   $('btnExportar').addEventListener('click', exportarCsv);
   $('btnRelatorio').addEventListener('click', compartilharRelatorio);
@@ -1515,6 +1674,15 @@
       renderizarHistorico();
     });
   });
+  $('filtroCtx').addEventListener('change', function () {
+    cfg.filtroCtx = this.value;
+    salvarCfg();
+    renderizarHistorico();
+  });
+  $('tabCalc').addEventListener('click', function () { mostrarAba('calc'); });
+  $('tabReg').addEventListener('click', function () { mostrarAba('reg'); });
+  $('gRapida').addEventListener('input', atualizarRapida);
+  $('btnSalvarRapida').addEventListener('click', salvarRapida);
   $('btnLimparHistorico').addEventListener('click', function () {
     if (confirm('Apagar todo o histórico de medições? Essa ação não pode ser desfeita.')) {
       historico = [];
@@ -1523,8 +1691,13 @@
     }
   });
 
-  // A insulina ativa, o lembrete e o status da basal mudam com o tempo
-  setInterval(function () { calcular(); renderizarLembrete(); renderizarBasal(); }, 60000);
+  // A insulina ativa, os lembretes e o "há X min" mudam com o tempo
+  setInterval(function () {
+    calcular();
+    renderizarLembrete();
+    renderizarBasal();
+    atualizarInfoUltima();
+  }, 60000);
 
   // PWA: registra o service worker quando servido por http(s)
   if ('serviceWorker' in navigator &&

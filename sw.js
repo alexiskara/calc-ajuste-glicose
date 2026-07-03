@@ -1,5 +1,5 @@
 // Service worker: deixa a calculadora funcionar offline quando instalada
-const CACHE = 'calc-glicose-v4';
+const CACHE = 'calc-glicose-v5';
 const ARQUIVOS = [
   './',
   './index.html',

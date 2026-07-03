@@ -5,6 +5,8 @@ no navegador e pode ser instalada como aplicativo no celular (PWA).
 
 ## Recursos
 
+- **Duas abas**: Calculadora (dose de correção) e Registro (anotar medições sem
+  cálculo, com histórico completo, filtro por momento e última medição)
 - **Dose de correção**: `(glicose atual − alvo) ÷ fator de sensibilidade (FSI)`
 - **Bolus alimentar** por contagem de carboidratos (razão insulina/carboidrato)
 - **Insulina ativa (IOB)** com curva bilinear (pico em ~75 min), descontada da dose
@@ -25,7 +27,6 @@ no navegador e pode ser instalada como aplicativo no celular (PWA).
 - **Lembrete de nova medição** 2 horas após registrar uma dose
 - **Backup e restauração** em arquivo JSON (para trocar de aparelho com segurança)
 - **Regras 1800 e 500** para estimativa inicial de FSI e ICR
-- **Unidades**: mg/dL ou mmol/L
 - **Modo escuro** automático, conforme o tema do aparelho
 - **Instalável** como aplicativo (PWA), funciona offline
 
