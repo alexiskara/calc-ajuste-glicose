@@ -532,7 +532,7 @@
     ⚠ Este app é apenas uma ferramenta de apoio e não substitui a orientação
     do seu médico. Em caso de dúvida sobre a dose de insulina, não aplique
     e procure atendimento médico.
-    <br><small id="versaoApp" style="opacity:.6">versão 13</small>
+    <br><small id="versaoApp" style="opacity:.6">versão 14</small>
   </footer>
 </div>
 
@@ -1385,7 +1385,15 @@
         if (e) lista.push(e);
       });
       if (lista.length === 0) {
-        status.textContent = 'Não encontrei resultados de exames neste PDF (talvez seja escaneado, só imagem).';
+        // Formato desconhecido: guarda o texto de cada página para você ao menos ler no app
+        paginas.forEach(function (linhas, i) {
+          if (linhas.length) {
+            lista.push({ nome: 'Página ' + (i + 1) + ' (texto do PDF)', material: 'formato não reconhecido', data: '', corpo: linhas, ref: [] });
+          }
+        });
+      }
+      if (lista.length === 0) {
+        status.textContent = 'Este PDF não tem texto para ler (é uma foto ou escaneado). Use um PDF baixado direto do laboratório.';
         return;
       }
       var antigos = exames ? exames.lista : [];
