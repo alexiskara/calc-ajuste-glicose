@@ -1,5 +1,5 @@
-// Service worker: deixa a calculadora funcionar offline quando instalada
-const CACHE = 'calc-glicose-v12';
+// Service worker: abre sempre a versão mais nova quando há internet e usa a cópia salva quando está offline
+const CACHE = 'calc-glicose-v13';
 const ARQUIVOS = [
   './',
   './index.html',
@@ -28,14 +28,17 @@ self.addEventListener('activate', (evento) => {
 });
 
 self.addEventListener('fetch', (evento) => {
+  if (evento.request.method !== 'GET') return;
+  const url = new URL(evento.request.url);
+  if (url.origin !== self.location.origin) return; // ntfy e outros serviços passam direto
+
   evento.respondWith(
-    caches.match(evento.request).then((emCache) => {
-      if (emCache) return emCache;
-      return fetch(evento.request).then((resposta) => {
+    fetch(evento.request, { cache: 'no-cache' }).then((resposta) => {
+      if (resposta.ok) {
         const copia = resposta.clone();
         caches.open(CACHE).then((cache) => cache.put(evento.request, copia));
-        return resposta;
-      });
-    })
+      }
+      return resposta;
+    }).catch(() => caches.match(evento.request, { ignoreSearch: true }))
   );
 });
