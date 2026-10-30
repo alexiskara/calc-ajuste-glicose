@@ -533,7 +533,7 @@
     ⚠ Este app é apenas uma ferramenta de apoio e não substitui a orientação
     do seu médico. Em caso de dúvida sobre a dose de insulina, não aplique
     e procure atendimento médico.
-    <br><small id="versaoApp" style="opacity:.6">versão 16</small>
+    <br><small id="versaoApp" style="opacity:.6">versão 17</small>
   </footer>
 </div>
 
@@ -1189,9 +1189,8 @@
 
   // ---------- Lembretes de insulina (ntfy.sh) ----------
   var NTFY = 'https://ntfy.sh/';
-  var lemb = carregarLemb();
-
   var HORAS_PADRAO = ['09:00', '12:00', '15:00', '18:00', '21:00'];
+  var lemb = carregarLemb();
 
   function carregarLemb() {
     var l = null;
