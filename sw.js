@@ -1,5 +1,5 @@
 // Service worker: abre sempre a versão mais nova quando há internet e usa a cópia salva quando está offline
-const CACHE = 'calc-glicose-v15';
+const CACHE = 'calc-glicose-v16';
 const ARQUIVOS = [
   './',
   './index.html',

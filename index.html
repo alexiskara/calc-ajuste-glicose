@@ -533,7 +533,7 @@
     ⚠ Este app é apenas uma ferramenta de apoio e não substitui a orientação
     do seu médico. Em caso de dúvida sobre a dose de insulina, não aplique
     e procure atendimento médico.
-    <br><small id="versaoApp" style="opacity:.6">versão 15</small>
+    <br><small id="versaoApp" style="opacity:.6">versão 16</small>
   </footer>
 </div>
 
@@ -1191,10 +1191,18 @@
   var NTFY = 'https://ntfy.sh/';
   var lemb = carregarLemb();
 
+  var HORAS_PADRAO = ['09:00', '12:00', '15:00', '18:00', '21:00'];
+
   function carregarLemb() {
     var l = null;
     try { l = JSON.parse(localStorage.getItem('lembInsulina')); } catch (e) {}
     if (!l || !l.topico) l = { topico: novoTopico(), horas: [], agendados: [] };
+    // Primeira vez neste aparelho: já vem com os horários padrão (depois você pode remover ou adicionar)
+    if (!l.padraoAplicado) {
+      if (l.horas.length === 0) l.horas = HORAS_PADRAO.slice();
+      l.padraoAplicado = true;
+      try { localStorage.setItem('lembInsulina', JSON.stringify(l)); } catch (e) {}
+    }
     return l;
   }
   function salvarLemb() {
