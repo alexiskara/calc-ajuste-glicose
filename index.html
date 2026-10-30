@@ -1453,7 +1453,8 @@
         alert('Arquivo inválido. Escolha um backup gerado pelo botão "Fazer backup".');
         return;
       }
-      if (!confirm('Restaurar backup com ' + dados.historico.length + ' medições? ' +
+      var nEx = dados.exames && dados.exames.lista ? dados.exames.lista.length : 0;
+      if (!confirm('Restaurar backup com ' + dados.historico.length + ' medições e ' + nEx + ' exames? ' +
         'Elas serão adicionadas ao histórico atual (sem duplicar) e os parâmetros ' +
         'do arquivo serão aplicados.')) return;
 
@@ -1474,8 +1475,16 @@
         }
       }
 
-      if (dados.exames && Array.isArray(dados.exames.lista) && !exames) {
-        exames = dados.exames;
+      var novosExames = 0;
+      if (dados.exames && Array.isArray(dados.exames.lista) && dados.exames.lista.length) {
+        var atuais = exames ? exames.lista : [];
+        var chaves = {};
+        atuais.forEach(function (e) { chaves[e.nome + '|' + e.data] = true; });
+        dados.exames.lista.forEach(function (e) {
+          if (e && e.nome && !chaves[e.nome + '|' + e.data]) { atuais.push(e); novosExames++; }
+        });
+        atuais.sort(function (a, b) { return dataIso(b.data).localeCompare(dataIso(a.data)); });
+        exames = { arquivo: (exames || dados.exames).arquivo, lidoEm: (exames || dados.exames).lidoEm, lista: atuais };
         salvarExames();
         renderizarExames();
       }
@@ -1483,7 +1492,8 @@
       salvarCfg();
       salvarHistorico();
       renderizarHistorico();
-      alert('Backup restaurado: ' + novas + ' medição(ões) adicionada(s).');
+      alert('Backup restaurado: ' + novas + ' medição(ões) e ' + novosExames + ' exame(s) adicionados.' +
+        (novas + novosExames === 0 ? '\n\nO arquivo não tinha nada novo: ele estava vazio ou os dados já existiam aqui.' : ''));
     };
     leitor.readAsText(arquivo);
   }
