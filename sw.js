@@ -1,10 +1,16 @@
 // Service worker: deixa a calculadora funcionar offline quando instalada
-const CACHE = 'calc-glicose-v5';
+const CACHE = 'calc-glicose-v11';
 const ARQUIVOS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './icone.svg'
+  './icone.svg',
+  './icone-180.png',
+  './icone-192.png',
+  './icone-512.png',
+  './icone-maskable-512.png',
+  './lib/pdf.min.js',
+  './lib/pdf.worker.min.js'
 ];
 
 self.addEventListener('install', (evento) => {

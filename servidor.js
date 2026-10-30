@@ -23,6 +23,7 @@ const MIME = {
   '.js': 'text/javascript; charset=utf-8',
   '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.png': 'image/png',
   '.json': 'application/json; charset=utf-8',
   '.css': 'text/css; charset=utf-8'
 };
@@ -30,6 +31,12 @@ const MIME = {
 const servidor = http.createServer((req, res) => {
   let arquivo = decodeURIComponent(req.url.split('?')[0]);
   if (arquivo === '/') arquivo = '/index.html';
+
+  // Só serve arquivos do app; PDFs, imagens de teste e outros ficam fora da rede
+  if (!MIME[path.extname(arquivo).toLowerCase()] || /servidor.js$/.test(arquivo)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Arquivo não encontrado');
+  }
 
   const caminho = path.join(__dirname, path.normalize(arquivo));
   if (!caminho.startsWith(__dirname)) {
