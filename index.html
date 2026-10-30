@@ -502,8 +502,9 @@
       <li>No app, toque em <strong>+</strong> e assine o tópico abaixo (servidor padrão ntfy.sh).</li>
       <li>Pronto: o alerta chega nos horários, mesmo com este app fechado.</li>
     </ol>
-    <div class="regra-box"><strong id="topicoLemb" style="word-break:break-all"></strong></div>
+    <div class="regra-box"><strong id="topicoLemb" style="word-break:break-all; user-select:all"></strong></div>
     <div class="historico-acoes">
+      <button class="botao-mini" id="btnCopiarTopico" type="button">Copiar tópico</button>
       <button class="botao-mini" id="btnTesteLemb" type="button">Enviar alerta de teste</button>
       <button class="botao-mini" id="btnNovoTopico" type="button">Gerar novo tópico</button>
     </div>
@@ -532,7 +533,7 @@
     ⚠ Este app é apenas uma ferramenta de apoio e não substitui a orientação
     do seu médico. Em caso de dúvida sobre a dose de insulina, não aplique
     e procure atendimento médico.
-    <br><small id="versaoApp" style="opacity:.6">versão 14</small>
+    <br><small id="versaoApp" style="opacity:.6">versão 15</small>
   </footer>
 </div>
 
@@ -1549,6 +1550,16 @@
     salvarLemb();
     renderizarLemb();
     agendarLembretes();
+  });
+  $('btnCopiarTopico').addEventListener('click', function () {
+    var txt = lemb.topico, st = $('statusLemb');
+    function ok() { st.textContent = '✓ Tópico copiado. Cole no app ntfy.'; }
+    function sel() {
+      var r = document.createRange(); r.selectNodeContents($('topicoLemb'));
+      var g = window.getSelection(); g.removeAllRanges(); g.addRange(r);
+      st.textContent = 'Selecionei o tópico; use Copiar no menu do celular.';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, sel); else sel();
   });
   $('btnTesteLemb').addEventListener('click', function () {
     $('statusLemb').textContent = 'Enviando teste…';
